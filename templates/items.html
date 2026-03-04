@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>My Clothing Items</h2>
+
+<!-- <form method="get">
+    <label>Category:</label>
+    <input type="text" name="category">
+
+    <label>Season:</label>
+    <input type="text" name="season">
+
+    <label>Color:</label>
+    <input type="text" name="color">
+
+    <button type="submit">Filter</button>
+</form> -->
+
+<!-- FILTER FORM -->
+<form method="get">
+
+    <div style="display: flex; gap: 50px; margin-bottom: 20px;">
+
+        <!-- COLORS -->
+        <div>
+            <h3>Colors</h3>
+            {% for c in all_colors %}
+                <div>
+                    <label>
+                        <input type="checkbox" name="color" value="{{ c }}"
+                            {% if c in selected_colors %} checked {% endif %}>
+                        {{ c }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- SEASONS -->
+        <div>
+            <h3>Seasons</h3>
+            {% for s in all_seasons %}
+                <div>
+                    <label>
+                        <input type="checkbox" name="season" value="{{ s }}"
+                            {% if s in selected_seasons %} checked {% endif %}>
+                        {{ s }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- TYPES -->
+        <div>
+            <h3>Types</h3>
+            {% for t in all_types %}
+                <div>
+                    <label>
+                        <input type="checkbox" name="item_type" value="{{ t }}"
+                            {% if t in selected_types %} checked {% endif %}>
+                        {{ t }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <button type="submit">Apply Filters</button>
+
+</form>
+
+<hr>
+
+<!-- <form method="get">
+
+    <label>Season:</label>
+    <div>
+        {% for c in all_seasons %}
+            <label style="margin-right: 10px;">
+                <input type="checkbox" name="season" value="{{ c }}"
+                    {% if c in selected_seasons %} checked {% endif %}>
+                {{ c }}
+            </label>
+        {% endfor %}
+    </div>
+
+    <button type="submit">Filter</button>
+
+</form> -->
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    {% for item in items %}
+        <div style="border: 1px solid gray; padding: 10px; width: 200px;">
+            <h3>{{ item.name }}</h3>
+            <p>Category: {{ item.category }}</p>
+            <p>Colors: {{ item.colors }}</p>
+            <p>Brand: {{ item.brand }}</p>
+
+            {% if item.image_filename %}
+                <img src="/static/images/{{ item.image_filename }}" width="180">
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
