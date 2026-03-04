@@ -52,12 +52,12 @@
 
         <!-- TYPES -->
         <div>
-            <h3>Types</h3>
-            {% for t in all_types %}
+            <h3>Categories</h3>
+            {% for t in all_categories %}
                 <div>
                     <label>
-                        <input type="checkbox" name="item_type" value="{{ t }}"
-                            {% if t in selected_types %} checked {% endif %}>
+                        <input type="checkbox" name="item_category" value="{{ t }}"
+                            {% if t in selected_categories %} checked {% endif %}>
                         {{ t }}
                     </label>
                 </div>

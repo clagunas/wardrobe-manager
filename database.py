@@ -26,7 +26,7 @@ for filename in os.listdir(data_folder):
                     "name": row["Item"],
                     "category": row["Type"],
                     "image_filename": row["Image"],
-                    "style": row["Style"],
+                    "style": [s.strip() for s in row["Style"].split(",")],
                     "brand": row["Brand"],
                     #"second_hand": row["2nd hand"].lower() == "yes",
                     "colors": [c.strip() for c in row["Color"].split(",")],

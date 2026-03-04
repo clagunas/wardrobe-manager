@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Add New Item</h2>
+
+<form method="post" enctype="multipart/form-data">
+    <label>Name:</label><br>
+    <input type="text" name="name" required><br><br>
+
+    <label>Category:</label><br>
+    <div class="filter-group">
+        {% for c in all_categories %}
+            <label>
+                <input type="checkbox" name="category" value="{{ c }}"> {{ c }}
+            </label>
+        {% endfor %}
+
+    </div>
+    <br>
+    
+    <label>Colors:</label><br>
+    <div class="filter-group">
+        {% for c in all_colors %}
+            <label>
+                <input type="checkbox" name="colors" value="{{ c }}"> {{ c }}
+            </label>
+        {% endfor %}
+    </div>
+    <br>
+
+    <label>Season:</label><br>
+    <div class="filter-group">
+        {% for s in all_seasons %}
+            <label>
+                <input type="checkbox" name="seasons" value="{{ s }}"> {{ s }}
+            </label>
+        {% endfor %}
+    </div>
+    <br>
+
+    <label>Style:</label><br>
+    <select name="style">
+        {% for st in all_styles %}
+            <option value="{{ st }}">{{ st }}</option>
+        {% endfor %}
+    </select>
+    <br><br>
+
+    <label>Brand:</label><br>
+    <input type="text" name="brand"><br><br>
+
+    <label>Price:</label><br>
+    <input type="number" name="price" step="0.01"><br><br>
+
+    <label>Image:</label><br>
+    <input type="file" name="image"><br><br>
+
+    <button type="submit">Add Item</button>
+</form>
+{% endblock %}
