@@ -72,33 +72,16 @@
 
 <hr>
 
-<!-- <form method="get">
-
-    <label>Season:</label>
-    <div>
-        {% for c in all_seasons %}
-            <label style="margin-right: 10px;">
-                <input type="checkbox" name="season" value="{{ c }}"
-                    {% if c in selected_seasons %} checked {% endif %}>
-                {{ c }}
-            </label>
-        {% endfor %}
-    </div>
-
-    <button type="submit">Filter</button>
-
-</form> -->
-
-<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+<div class="grid">
     {% for item in items %}
-        <div style="border: 1px solid gray; padding: 10px; width: 200px;">
+        <div class="card">
             <h3>{{ item.name }}</h3>
-            <p>Category: {{ item.category }}</p>
-            <p>Colors: {{ item.colors }}</p>
-            <p>Brand: {{ item.brand }}</p>
+            <p><strong>Category:</strong> {{ item.category }}</p>
+            <p><strong>Colors:</strong> {{ item.colors | join(", ") }}</p>
+            <p><strong>Brand:</strong> {{ item.brand }}</p>
 
             {% if item.image_filename %}
-                <img src="/static/images/{{ item.image_filename }}" width="180">
+                <img src="{{ url_for('static', path='images/' + item.image_filename) }}">
             {% endif %}
         </div>
     {% endfor %}
