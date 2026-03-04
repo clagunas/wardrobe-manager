@@ -1,0 +1,9 @@
+data/*.csv
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+static/images/*.jpeg
+.DS_Store
+*.png
