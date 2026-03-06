@@ -50,7 +50,7 @@
             {% endfor %}
         </div>
 
-        <!-- TYPES -->
+        <!-- CATEGORIES -->
         <div>
             <h3>Categories</h3>
             {% for t in all_categories %}
@@ -62,6 +62,12 @@
                     </label>
                 </div>
             {% endfor %}
+        </div>
+        
+        <!-- BRAND -->
+        <div class="filter-section">
+            <h3>Brand</h3>
+            <input type="text" name="brand" value="{{ selected_brand }}" class="filter-input">
         </div>
 
     </div>

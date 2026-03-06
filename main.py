@@ -7,6 +7,16 @@ from typing import List, Optional
 import os
 import shutil
 
+ALLOWED_CATEGORIES = [
+    "Top",
+    "Pants",
+    "Outerwear",
+    "Shoes",
+    "Accessories",
+    "Dresses",
+    "Bags"
+]
+
 app = FastAPI()
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
@@ -22,7 +32,8 @@ async def list_items(
     request: Request,
     color: List[str] = Query(None),
     season: List[str] = Query(None),
-    item_category: List[str] = Query(None)
+    item_category: List[str] = Query(None),
+    brand: Optional[str] = Query(None),
 ):
     query = {}
 
@@ -35,12 +46,15 @@ async def list_items(
     if item_category:
         query["category"] = {"$in": item_category}
 
+    if brand:
+        query["brand"] = {"$regex": brand, "$options": "i"}
+
     items = await collection.find(query).to_list(1000)
 
     # Fetch distinct values for filters
     all_colors = await collection.distinct("colors")
     all_seasons = await collection.distinct("season")
-    all_categories = await collection.distinct("category")
+    all_categories = ALLOWED_CATEGORIES
 
     return templates.TemplateResponse("items.html", {
         "request": request,
@@ -50,7 +64,8 @@ async def list_items(
         "all_categories": sorted(all_categories),
         "selected_colors": color or [],
         "selected_seasons": season or [],
-        "selected_categories": item_category or []
+        "selected_categories": item_category or [],
+        "selected_brand": brand or "",
     })
 
 @app.get("/add-item")
@@ -58,7 +73,7 @@ async def add_item_form(request: Request):
     # Get distinct values for filters to populate dropdowns if needed
     all_colors = await collection.distinct("colors")
     all_seasons = await collection.distinct("season")
-    all_categories = await collection.distinct("category")
+    all_categories = ALLOWED_CATEGORIES
     all_styles = await collection.distinct("style")
     return templates.TemplateResponse("add_item.html", {
         "request": request,
@@ -87,6 +102,10 @@ async def add_item(
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
 
+    # do not allow arbitrary categories
+    if category not in ALLOWED_CATEGORIES:
+        return RedirectResponse(url="/add-item", status_code=303)
+    
     item = {
         "name": name,
         "category": category,
