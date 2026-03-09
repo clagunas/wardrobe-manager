@@ -3,9 +3,18 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
+from bson import ObjectId
 from typing import List, Optional
 import os
 import shutil
+import re
+import uuid
+
+def make_filename(name):
+    cleaned = name.lower()
+    cleaned = re.sub(r"[^\w\s]", "", cleaned)
+    cleaned = cleaned.replace(" ", "_")
+    return f"{uuid.uuid4()}_{cleaned}.jpg"
 
 ALLOWED_CATEGORIES = [
     "Top",
@@ -97,7 +106,7 @@ async def add_item(
     image_filename = None
     if image:
         # Save file to static/images/
-        image_filename = image.filename
+        image_filename = make_filename(name)
         save_path = os.path.join("static", "images", image_filename)
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
@@ -119,5 +128,59 @@ async def add_item(
     }
 
     await collection.insert_one(item)
+
+    return RedirectResponse(url="/", status_code=303)
+
+@app.get("/edit-item/{item_id}")
+async def edit_item_form(request: Request, item_id: str):
+
+    item = await collection.find_one({"_id": ObjectId(item_id)})
+
+    return templates.TemplateResponse("edit_item.html", {
+        "request": request,
+        "item": item,
+        "all_colors": await collection.distinct("colors"),
+        "all_seasons": await collection.distinct("season"),
+        "all_styles": await collection.distinct("style"),
+        "all_categories": ALLOWED_CATEGORIES
+    })
+
+@app.post("/edit-item/{item_id}")
+async def update_item(
+    item_id: str,
+    name: str = Form(...),
+    category: str = Form(...),
+    colors: Optional[List[str]] = Form(None),
+    seasons: Optional[List[str]] = Form(None),
+    style: Optional[List[str]] = Form(None),
+    brand: Optional[str] = Form(None),
+    price: Optional[float] = Form(None),
+    image: Optional[UploadFile] = File(None)
+):
+
+    update_data = {
+        "name": name,
+        "category": category,
+        "colors": colors or [],
+        "season": seasons or [],
+        "style": style or [],
+        "brand": brand or "",
+        "price": price or ""
+    }
+
+    if image:
+        image_filename = make_filename(name)
+
+        save_path = os.path.join("static", "images", image_filename)
+
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        update_data["image_filename"] = image_filename
+
+    await collection.update_one(
+        {"_id": ObjectId(item_id)},
+        {"$set": update_data}
+    )
 
     return RedirectResponse(url="/", status_code=303)
