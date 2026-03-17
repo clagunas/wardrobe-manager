@@ -1,186 +1,123 @@
-from fastapi import FastAPI, Request, Query, Form, File, UploadFile
-from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel, Field
+from typing import List, Literal, Optional
+from uuid import uuid4
 from motor.motor_asyncio import AsyncIOMotorClient
-from bson import ObjectId
-from typing import List, Optional
-import os
-import shutil
-import re
-import uuid
+from models import ClothingItemBase, ClothingItem, ClothingItemFilter
+#from database_interface import get_items_collection
 
-def make_filename(name):
-    cleaned = name.lower()
-    cleaned = re.sub(r"[^\w\s]", "", cleaned)
-    cleaned = cleaned.replace(" ", "_")
-    return f"{uuid.uuid4()}_{cleaned}.jpg"
-
-ALLOWED_CATEGORIES = [
-    "Top",
-    "Pants",
-    "Outerwear",
-    "Shoes",
-    "Accessories",
-    "Dresses",
-    "Bags"
-]
-
-app = FastAPI()
+app = FastAPI(
+    title="Clothing Items API",
+    description="A simple API to manage clothing items",
+    version="1.0.0",
+)
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.wardrobe
-collection = db.items
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+collection = db.items #get_items_collection()
 
 
-@app.get("/")
-async def list_items(
-    request: Request,
-    color: List[str] = Query(None),
-    season: List[str] = Query(None),
-    item_category: List[str] = Query(None),
-    brand: Optional[str] = Query(None),
-):
+def mongo_to_dict(item):
+    item["id"] = str(item["_id"])
+    del item["_id"]
+    return item
+
+@app.get("/", tags=["Root"])
+async def read_root():#(collection: AsyncIOMotorCollection = Depends(get_items_collection)):
+    """Welcome endpoint"""
+    items_count = await collection.count_documents({})    
+    return {
+        "message": "Welcome to the Clothing Items API!",
+        "docs": "/docs",
+        "items_count": items_count,
+    }
+
+@app.get("/items", response_model=List[ClothingItem], tags=["Items"])
+async def get_all_clothing_items():#(collection=Depends(get_items_collection)):
+    """Get all clothing items"""
+    items = await collection.find({}).to_list(1000)
+    items = [mongo_to_dict(item) for item in items]
+    return items
+
+# Always define specific routes before path-parameter routes to avoid conflicts
+# TO-DO: add filters or allow different direction or length
+@app.get("/items/time_ordered", response_model=List[ClothingItem], tags=["Items"])
+async def get_clothing_items_time_ordered():#(collection=Depends(get_items_collection)):
+    """Get all clothing items ordered by time of creation"""
+    filter = {} # maybe useful later
+    direction = -1 # descending
+    sorted_cursor = collection.find(filter).sort("_id", direction)
+    items = await sorted_cursor.to_list(length=3)
+    items = [mongo_to_dict(item) for item in items]
+    return items
+
+# this probably doesn't work
+@app.get("/items/{item_id}", response_model=ClothingItem, tags=["Items"])
+async def get_clothing_item(item_id: str):#, collection=Depends(get_items_collection)):
+    """Get a specific clothing item by ID"""
+    item = await collection.find_one({"id": item_id})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return item
+
+@app.post(
+    "/create_clothing_item",
+    response_model=ClothingItem,
+    status_code=201,
+    tags=["Items"],
+)
+async def create_clothing_item(item: ClothingItemBase):
+    """Create a new clothing item"""
+    item_dict = item.model_dump()
+    inserted = await collection.insert_one(item_dict)
+    item_dict["id"] = str(inserted.inserted_id)
+    return item_dict
+
+@app.post(
+    "/get_items_filtered",
+    response_model=List[ClothingItem],
+    status_code=200,
+    tags=["Items"],
+)
+async def get_items_filtered(filter: ClothingItemFilter):
+    """Get clothing items based on filters"""
+
     query = {}
 
-    if color:
-        query["colors"] = {"$in": color}
+    filter_map = {
+        "category": "category",
+        "season": "season",
+        "color": "colors",
+        "brand": "brand"
+    }
 
-    if season:
-        query["season"] = {"$in": season}
+    for field, db_field in filter_map.items():
+        value = getattr(filter, field)
 
-    if item_category:
-        query["category"] = {"$in": item_category}
-
-    if brand:
-        query["brand"] = {"$regex": brand, "$options": "i"}
+        if value:
+            query[db_field] = {"$in": value}
 
     items = await collection.find(query).to_list(1000)
+    items = [mongo_to_dict(item) for item in items]
 
-    # Fetch distinct values for filters
-    all_colors = await collection.distinct("colors")
-    all_seasons = await collection.distinct("season")
-    all_categories = ALLOWED_CATEGORIES
+    return items
 
-    return templates.TemplateResponse("items.html", {
-        "request": request,
-        "items": items,
-        "all_colors": sorted(all_colors),
-        "all_seasons": sorted(all_seasons),
-        "all_categories": sorted(all_categories),
-        "selected_colors": color or [],
-        "selected_seasons": season or [],
-        "selected_categories": item_category or [],
-        "selected_brand": brand or "",
-    })
+# @app.post(
+#     "/get_items_filtered",
+#     response_model=List[ClothingItem],
+#     status_code=200,
+# )
+# def get_items_filtered(filter: ClothingItemFilter):
+#     """Create a new clothing item"""
 
-@app.get("/add-item")
-async def add_item_form(request: Request):
-    # Get distinct values for filters to populate dropdowns if needed
-    all_colors = await collection.distinct("colors")
-    all_seasons = await collection.distinct("season")
-    all_categories = ALLOWED_CATEGORIES
-    all_styles = await collection.distinct("style")
-    return templates.TemplateResponse("add_item.html", {
-        "request": request,
-        "all_colors": sorted(all_colors),
-        "all_seasons": sorted(all_seasons),
-        "all_categories": sorted(all_categories),
-        "all_styles": sorted(all_styles)
-    })
+#     # qry = f"""
+#     #     select * from clothing_items where true
+#     #     and (category = {filter.category} or {filter.category} is null)
+#     #     and (size = {filter.size} or {filter.size} is null)
+#     #     and (color = {filter.color} or {filter.color} is null)
+#     #     and (brand = {filter.brand} or {filter.brand} is null)
+#     # """
+#     # items_df = pd.read_sql(qry, con=engine)
+#     # items = items_df.to_dict(orient="records")
 
-@app.post("/add-item")
-async def add_item(
-    name: str = Form(...),
-    category: str = Form(...),
-    colors: Optional[List[str]] = Form(None),   # list of checked colors
-    seasons: Optional[List[str]] = Form(None),  # list of checked seasons
-    style: Optional[List[str]] = Form(None),
-    brand: Optional[str] = Form(None),
-    price: Optional[float] = Form(None),
-    image: Optional[UploadFile] = File(None)
-):
-    image_filename = None
-    if image:
-        # Save file to static/images/
-        image_filename = make_filename(name)
-        save_path = os.path.join("static", "images", image_filename)
-        with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-
-    # do not allow arbitrary categories
-    if category not in ALLOWED_CATEGORIES:
-        return RedirectResponse(url="/add-item", status_code=303)
-    
-    item = {
-        "name": name,
-        "category": category,
-        "colors": colors or [],
-        "season": seasons or [],
-        "style": style or [],
-        "brand": brand or "",
-        "price": price or "",
-        "image_filename": image_filename,
-        #"created_at": datetime.utcnow()
-    }
-
-    await collection.insert_one(item)
-
-    return RedirectResponse(url="/", status_code=303)
-
-@app.get("/edit-item/{item_id}")
-async def edit_item_form(request: Request, item_id: str):
-
-    item = await collection.find_one({"_id": ObjectId(item_id)})
-
-    return templates.TemplateResponse("edit_item.html", {
-        "request": request,
-        "item": item,
-        "all_colors": await collection.distinct("colors"),
-        "all_seasons": await collection.distinct("season"),
-        "all_styles": await collection.distinct("style"),
-        "all_categories": ALLOWED_CATEGORIES
-    })
-
-@app.post("/edit-item/{item_id}")
-async def update_item(
-    item_id: str,
-    name: str = Form(...),
-    category: str = Form(...),
-    colors: Optional[List[str]] = Form(None),
-    seasons: Optional[List[str]] = Form(None),
-    style: Optional[List[str]] = Form(None),
-    brand: Optional[str] = Form(None),
-    price: Optional[float] = Form(None),
-    image: Optional[UploadFile] = File(None)
-):
-
-    update_data = {
-        "name": name,
-        "category": category,
-        "colors": colors or [],
-        "season": seasons or [],
-        "style": style or [],
-        "brand": brand or "",
-        "price": price or ""
-    }
-
-    if image:
-        image_filename = make_filename(name)
-
-        save_path = os.path.join("static", "images", image_filename)
-
-        with open(save_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-
-        update_data["image_filename"] = image_filename
-
-    await collection.update_one(
-        {"_id": ObjectId(item_id)},
-        {"$set": update_data}
-    )
-
-    return RedirectResponse(url="/", status_code=303)
+#     return items
