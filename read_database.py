@@ -15,6 +15,9 @@ print("Existing data cleared.")
 
 data_folder = "data"
 
+def to_bool(value):
+    return str(value).strip().lower() in {"true", "1", "yes"}
+
 for filename in os.listdir(data_folder):
     if filename.endswith(".csv"):
         file_path = os.path.join(data_folder, filename)
@@ -29,9 +32,11 @@ for filename in os.listdir(data_folder):
                     image_filename=row["Image"],
                     style=[s.strip() for s in row["Style"].split(",") if s],
                     brand=row["Brand"] or None,
+                    second_hand=to_bool(row["2nd hand"]) if row["2nd hand"] else None,
                     colors=[c.strip() for c in row["Color"].split(",") if c],
                     season=row["Season"] or None,
                     price=float(row["Price"].replace(",", ".")) if row["Price"] else None,
+                    date_added=datetime.strptime(row["Date"], "%d/%m/%Y") if row["Date"] else None,
                     place=row["Place"],
                     comment=row["Comment"],
                 )
