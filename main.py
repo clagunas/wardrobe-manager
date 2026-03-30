@@ -34,6 +34,7 @@ async def read_root():#(collection: AsyncIOMotorCollection = Depends(get_items_c
     return {
         "message": "Welcome to the Clothing Items API!",
         "docs": "/docs",
+        "show_all": "/static/items.html",
         "items_count": items_count,
     }
 

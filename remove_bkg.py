@@ -8,7 +8,7 @@ from PIL import Image
 from skimage import morphology
 
 
-input_folder = "images"
+input_folder = "preprocessed_images"
 output_folder = "output_images"
 
 os.makedirs(output_folder, exist_ok=True)
