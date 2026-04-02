@@ -11,7 +11,7 @@ collection = db["items"]
 
 # Clear existing data (DEV)
 collection.delete_many({})
-print("Existing data cleared.")
+print("Existing data of items cleared.")
 
 data_folder = "data"
 
@@ -41,20 +41,18 @@ for filename in os.listdir(data_folder):
                     comment=row["Comment"],
                 )
                 collection.insert_one(item.model_dump())
-                # item = {
-                #     "name": row["Item"],
-                #     "category": row["Type"],
-                #     "image_filename": row["Image"],
-                #     "style": [s.strip() for s in row["Style"].split(",")],
-                #     "brand": row["Brand"],
-                #     #"second_hand": row["2nd hand"].lower() == "yes",
-                #     "colors": [c.strip() for c in row["Color"].split(",")],
-                #     "season": [s.strip() for s in row["Season"].split(",")],
-                #     "price": float(row["Price"].replace(",", ".")) if row["Price"] else None,
-                #     #"date_added": datetime.strptime(row["Date"], "%Y-%m-%d") if row["Date"] else None,
-                #     "place": row["Place"],
-                #     "comment": row["Comment"]
-                # }
-                #collection.insert_one(item)
 
-print("Import complete.")
+print("Import of items complete.")
+
+# there should be a better way
+if "outfits" not in db.list_collection_names():
+    db.create_collection("outfits")
+    print("Outfits collection created.")
+
+if "lookbook" not in db.list_collection_names():
+    db.create_collection("lookbook")
+    print("Lookbook collection created.")
+
+if "calendar" not in db.list_collection_names():
+    db.create_collection("calendar")
+    print("Calendar collection created.")

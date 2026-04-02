@@ -3,9 +3,17 @@ from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 from uuid import uuid4
 from motor.motor_asyncio import AsyncIOMotorClient
-from models import ClothingItemBase, ClothingItem, ClothingItemFilter, ClothingItemUpdate
+from models import (
+    ClothingItemBase,
+    ClothingItem,
+    ClothingItemFilter,
+    ClothingItemUpdate,
+    OutfitItemBase,
+    OutfitItem,
+)
 from bson import ObjectId
-#from database_interface import get_items_collection
+
+# from database_interface import get_items_collection
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
@@ -19,7 +27,8 @@ app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.wardrobe
-collection = db.items #get_items_collection()
+collection = db.items  # get_items_collection()
+outfit_collection = db.outfits
 
 
 def mongo_to_dict(item):
@@ -27,10 +36,11 @@ def mongo_to_dict(item):
     del item["_id"]
     return item
 
+
 @app.get("/", tags=["Root"])
-async def read_root():#(collection: AsyncIOMotorCollection = Depends(get_items_collection)):
+async def read_root():  # (collection: AsyncIOMotorCollection = Depends(get_items_collection)):
     """Welcome endpoint"""
-    items_count = await collection.count_documents({})    
+    items_count = await collection.count_documents({})
     return {
         "message": "Welcome to the Clothing Items API!",
         "docs": "/docs",
@@ -38,33 +48,39 @@ async def read_root():#(collection: AsyncIOMotorCollection = Depends(get_items_c
         "items_count": items_count,
     }
 
+
 @app.get("/items", response_model=List[ClothingItem], tags=["Items"])
-async def get_all_clothing_items():#(collection=Depends(get_items_collection)):
+async def get_all_clothing_items():  # (collection=Depends(get_items_collection)):
     """Get all clothing items"""
     items = await collection.find({}).to_list(1000)
     items = [mongo_to_dict(item) for item in items]
     return items
 
+
 # Always define specific routes before path-parameter routes to avoid conflicts
 # TO-DO: add filters or allow different direction or length
 @app.get("/items/time_ordered", response_model=List[ClothingItem], tags=["Items"])
-async def get_clothing_items_time_ordered():#(collection=Depends(get_items_collection)):
+async def get_clothing_items_time_ordered():  # (collection=Depends(get_items_collection)):
     """Get clothing items ordered by time of creation in the database"""
-    filter = {} # maybe useful later
-    direction = -1 # descending
+    filter = {}  # maybe useful later
+    direction = -1  # descending
     sorted_cursor = collection.find(filter).sort("_id", direction)
     items = await sorted_cursor.to_list(length=3)
     items = [mongo_to_dict(item) for item in items]
     return items
 
+
 # this probably doesn't work
 @app.get("/items/{item_id}", response_model=ClothingItem, tags=["Items"])
-async def get_clothing_item(item_id: str):#, collection=Depends(get_items_collection)):
+async def get_clothing_item(
+    item_id: str,
+):  # , collection=Depends(get_items_collection)):
     """Get a specific clothing item by ID"""
     item = await collection.find_one({"id": item_id})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
+
 
 @app.post(
     "/create_clothing_item",
@@ -78,6 +94,7 @@ async def create_clothing_item(item: ClothingItemBase):
     inserted = await collection.insert_one(item_dict)
     item_dict["id"] = str(inserted.inserted_id)
     return item_dict
+
 
 @app.post(
     "/get_items_filtered",
@@ -95,7 +112,7 @@ async def get_items_filtered(filter: ClothingItemFilter):
         "season": "season",
         "color": "colors",
         "brand": "brand",
-        "second_hand": "second_hand"
+        "second_hand": "second_hand",
     }
 
     for field, db_field in filter_map.items():
@@ -109,15 +126,48 @@ async def get_items_filtered(filter: ClothingItemFilter):
 
     return items
 
+
 @app.patch("/modify_item/{item_id}", response_model=ClothingItem, tags=["Items"])
 async def modify_clothing_item(item_id: str, item: ClothingItemUpdate):
     """Modify an existing clothing item by ID"""
     item_dict = item.model_dump(exclude_unset=True)
     if not item_dict:
         raise HTTPException(status_code=400, detail="No fields provided")
-    result = await collection.update_one({"_id": ObjectId(item_id)}, 
-                                         {"$set": item_dict})
+    result = await collection.update_one(
+        {"_id": ObjectId(item_id)}, {"$set": item_dict}
+    )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")
     updated_item = await collection.find_one({"_id": ObjectId(item_id)})
     return mongo_to_dict(updated_item)
+
+# check all outfit routes
+@app.post(
+    "/create_outfit", response_model=OutfitItem, status_code=201, tags=["Outfits"]
+)
+async def create_outfit(outfit: OutfitItemBase):
+    """Create a new outfit in the 'outfits' collection"""
+    outfit_dict = outfit.model_dump()
+    inserted = await outfit_collection.insert_one(outfit_dict)
+    outfit_dict["id"] = str(inserted.inserted_id)
+    return outfit_dict
+
+@app.get("/outfits", response_model=List[OutfitItem], tags=["Outfits"])
+async def get_all_outfits():
+    """Get all outfits"""
+    outfits = await outfit_collection.find({}).to_list(1000)
+    outfits = [mongo_to_dict(outfit) for outfit in outfits]
+    return outfits
+
+@app.get("/outfits/get_items/{outfit_id}", response_model=List[ClothingItem], tags=["Outfits"])
+async def get_outfit_items(outfit_id: str):
+    """Get a specific outfit by ID"""
+    outfit = await outfit_collection.find_one({"id": outfit_id})
+    if not outfit:
+        raise HTTPException(status_code=404, detail="Outfit not found")
+    items = []
+    for item_id in outfit["items"]:
+        item = await collection.find_one({"_id": item_id})
+        if item:
+            items.append(mongo_to_dict(item))
+    return items
