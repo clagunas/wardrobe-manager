@@ -8,10 +8,15 @@ from models import (
     ClothingItem,
     ClothingItemFilter,
     ClothingItemUpdate,
-    OutfitItemBase,
-    OutfitItem,
+    OutfitBase,
+    Outfit,
+    ALLOWED_CATEGORIES,
+    ALLOWED_SEASONS
 )
 from bson import ObjectId
+from fastapi import UploadFile, File
+import shutil
+import uuid
 
 # from database_interface import get_items_collection
 from fastapi.staticfiles import StaticFiles
@@ -29,6 +34,8 @@ client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.wardrobe
 collection = db.items  # get_items_collection()
 outfit_collection = db.outfits
+lookbook_collection = db.lookbooks # future use
+calendar_collection = db.calendar # future use
 
 
 def mongo_to_dict(item):
@@ -48,6 +55,58 @@ async def read_root():  # (collection: AsyncIOMotorCollection = Depends(get_item
         "items_count": items_count,
     }
 
+# Helper function
+@app.get("/allowed_values", tags=["Helper"])
+async def allowed_values():
+    return {
+        "categories": ALLOWED_CATEGORIES,
+        "seasons": ALLOWED_SEASONS
+    }
+
+@app.get("/item_appearances", response_model=dict, tags=["Helper"])
+async def find_item_appearances(item_id: str):
+    """Find outfits, lookbooks, and calendar entries that include a specific clothing item"""
+    outfits = []
+    async for outfit in outfit_collection.find({"items": item_id}):
+        outfit["_id"] = str(outfit["_id"])
+        outfits.append(outfit)
+    lookbooks = []
+    async for lookbook in db.lookbooks.find({"items": item_id}):
+        lookbook["_id"] = str(lookbook["_id"])
+        lookbooks.append(lookbook)
+    days_count = await db.calendar.count_documents({"items": item_id})
+    # days = []
+    # async for day in db.calendar.find({"items": item_id}):
+    #     day["_id"] = str(day["_id"])
+    #     days.append(day)
+        # I don't want the days but just a count 
+    return {"outfits": outfits, "lookbooks": lookbooks, "days": days_count}
+
+@app.get("/outfit_appearances", response_model=dict, tags=["Helper"])
+async def find_outfit_appearances(outfit_id: str):
+    """Find lookbooks, and calendar entries that include a specific outfit"""
+    ## I don't know yet if all outfits and items will be listed under items
+    lookbooks = []
+    async for lookbook in db.lookbooks.find({"items": outfit_id}):
+        lookbook["_id"] = str(lookbook["_id"])
+        lookbooks.append(lookbook)
+    days_count = await db.calendar.count_documents({"items": outfit_id})
+    # days = []
+    # async for day in db.calendar.find({"items": outfit_id}):
+    #     day["_id"] = str(day["_id"])
+    #     days.append(day)
+        # I don't want the days but just a count 
+    return {"lookbooks": lookbooks, "days": days_count}
+
+# Helper function, to be checked
+@app.post("/upload_image", tags=["Helper"])
+async def upload_image(file: UploadFile = File(...)):
+    ext = file.filename.split(".")[-1]
+    filename = f"{uuid.uuid4()}.{ext}" # don't want that? 
+    filepath = f"images/{filename}"
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": filename}
 
 @app.get("/items", response_model=List[ClothingItem], tags=["Items"])
 async def get_all_clothing_items():  # (collection=Depends(get_items_collection)):
@@ -70,16 +129,15 @@ async def get_clothing_items_time_ordered():  # (collection=Depends(get_items_co
     return items
 
 
-# this probably doesn't work
 @app.get("/items/{item_id}", response_model=ClothingItem, tags=["Items"])
 async def get_clothing_item(
     item_id: str,
 ):  # , collection=Depends(get_items_collection)):
     """Get a specific clothing item by ID"""
-    item = await collection.find_one({"id": item_id})
+    item = await collection.find_one({"_id": ObjectId(item_id)})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    return item
+    return mongo_to_dict(item)
 
 
 @app.post(
@@ -97,12 +155,12 @@ async def create_clothing_item(item: ClothingItemBase):
 
 
 @app.post(
-    "/get_items_filtered",
+    "/filter_items",
     response_model=List[ClothingItem],
     status_code=200,
     tags=["Items"],
 )
-async def get_items_filtered(filter: ClothingItemFilter):
+async def filter_items(filter: ClothingItemFilter):
     """Get clothing items based on filters"""
 
     query = {}
@@ -141,33 +199,62 @@ async def modify_clothing_item(item_id: str, item: ClothingItemUpdate):
     updated_item = await collection.find_one({"_id": ObjectId(item_id)})
     return mongo_to_dict(updated_item)
 
+
 # check all outfit routes
-@app.post(
-    "/create_outfit", response_model=OutfitItem, status_code=201, tags=["Outfits"]
-)
-async def create_outfit(outfit: OutfitItemBase):
+@app.post("/create_outfit", response_model=Outfit, status_code=201, tags=["Outfits"])
+async def create_outfit(outfit: OutfitBase):
     """Create a new outfit in the 'outfits' collection"""
     outfit_dict = outfit.model_dump()
     inserted = await outfit_collection.insert_one(outfit_dict)
     outfit_dict["id"] = str(inserted.inserted_id)
     return outfit_dict
 
-@app.get("/outfits", response_model=List[OutfitItem], tags=["Outfits"])
+
+@app.get("/outfits", response_model=List, tags=["Outfits"])
 async def get_all_outfits():
     """Get all outfits"""
-    outfits = await outfit_collection.find({}).to_list(1000)
-    outfits = [mongo_to_dict(outfit) for outfit in outfits]
+    # outfits = await outfit_collection.find({}).to_list(1000)
+    # outfits = [mongo_to_dict(outfit) for outfit in outfits]
+    # return outfits
+
+    outfits = []
+
+    async for outfit in outfit_collection.find():
+        item_ids = [ObjectId(i) for i in outfit["items"]]
+
+        items = []
+        async for item in collection.find({"_id": {"$in": item_ids}}):
+            item["_id"] = str(item["_id"])
+            items.append(item)
+
+        outfit["_id"] = str(outfit["_id"])
+        outfit["items_data"] = items
+
+        outfits.append(outfit)
+
     return outfits
 
-@app.get("/outfits/get_items/{outfit_id}", response_model=List[ClothingItem], tags=["Outfits"])
+@app.get("/outfits/{outfit_id}", response_model=Outfit, tags=["Outfits"])
+async def get_outfit(outfit_id: str):
+    """Get a specific outfit by ID"""
+    outfit = await outfit_collection.find_one({"_id": ObjectId(outfit_id)})
+    if not outfit:
+        raise HTTPException(status_code=404, detail="Outfit not found")
+    return mongo_to_dict(outfit)
+
+@app.get(
+    "/outfits/get_items/{outfit_id}",
+    response_model=List[ClothingItem],
+    tags=["Outfits"],
+)
 async def get_outfit_items(outfit_id: str):
     """Get a specific outfit by ID"""
-    outfit = await outfit_collection.find_one({"id": outfit_id})
+    outfit = await outfit_collection.find_one({"_id": ObjectId(outfit_id)})
     if not outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
     items = []
     for item_id in outfit["items"]:
-        item = await collection.find_one({"_id": item_id})
+        item = await collection.find_one({"_id": ObjectId(item_id)})
         if item:
             items.append(mongo_to_dict(item))
     return items

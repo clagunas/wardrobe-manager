@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clothing Items</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    img.item-image { max-width: 300px; max-height: 300px; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <h1>Clothing Items</h1>
+  <table id="items-table">
+    <thead>
+      <tr>
+        <th>Image</th>
+        <th>Name</th>
+        <th>Colors</th>
+        <th>Category</th>
+        <th>Season</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // Fields that are arrays
+    const arrayFields = ["colors", "category", "season"];
+
+    function formatField(value, fieldName) {
+      if (!value) return "";
+      if (arrayFields.includes(fieldName)) {
+        return Array.isArray(value) ? value.join(", ") : value;
+      }
+      return value;
+    }
+
+    async function loadItems() {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/items");
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        const items = await response.json();
+
+        const tbody = document.querySelector("#items-table tbody");
+        tbody.innerHTML = "";
+
+        items.forEach(item => {
+          const row = document.createElement("tr");
+
+          // Image cell
+          const imgCell = document.createElement("td");
+          if (item.image_filename) {
+            const img = document.createElement("img");
+            // Adjust path to where images are served
+            img.src = `/images/${item.image_filename}`;
+            img.alt = item.name || "Item Image";
+            img.className = "item-image";
+            imgCell.appendChild(img);
+          }
+          row.appendChild(imgCell);
+
+          // Other fields
+          // ["name", "colors", "category", "season"].forEach(field => {
+          //   const cell = document.createElement("td");
+          //   cell.textContent = formatField(item[field], field);
+          //   row.appendChild(cell);
+          // });
+
+          // Clickable name to go to item details page
+          ["name", "colors", "category", "season"].forEach(field => {
+            const cell = document.createElement("td");
+
+            if (field === "name" && item.id) {
+              const link = document.createElement("a");
+              link.href = `item.html?id=${encodeURIComponent(item.id)}`;
+              link.textContent = item.name;
+              cell.appendChild(link);
+            } else {
+              cell.textContent = formatField(item[field], field);
+            }
+            row.appendChild(cell);
+          });
+
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Failed to load items:", err);
+        const tbody = document.querySelector("#items-table tbody");
+        tbody.innerHTML = `<tr><td colspan="5">Failed to load items: ${err.message}</td></tr>`;
+      }
+    }
+
+    loadItems();
+  </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!-- <form id="add-item-form">
+    <label>Category:</label>
+    <select name="category" required></select><br><br>
+
+    <label>Season:</label>
+    <select name="season"></select><br><br>
+
+    <label>Colors:</label>
+    <input type="text" name="colors" placeholder="Comma-separated"><br><br>
+
+    <button type="submit">Add Item</button>
+</form>
+
+<script>
+async function populateForm() {
+    const resp = await fetch("/allowed_values");
+    const data = await resp.json();
+
+    // Populate categories
+    const categorySelect = document.querySelector("select[name='category']");
+    data.categories.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c;
+        option.textContent = c;
+        categorySelect.appendChild(option);
+    });
+
+    // Populate seasons
+    const seasonSelect = document.querySelector("select[name='season']");
+    data.seasons.forEach(s => {
+        const option = document.createElement("option");
+        option.value = s;
+        option.textContent = s;
+        seasonSelect.appendChild(option);
+    });
+}
+
+populateForm();
+</script> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Clothing Item</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        label { font-weight: bold; }
+        .filter-group label { margin-right: 10px; }
+        input, select, button { margin-top: 5px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<h2>Add New Clothing Item</h2>
+
+<form id="add-item-form">
+    <label>Name:</label><br>
+    <input type="text" name="name" required><br>
+
+    <label>Category:</label><br>
+    <select name="category" required></select><br>
+
+    <label>Season:</label><br>
+    <select name="season"></select><br>
+
+    <label>Colors (comma separated):</label><br>
+    <input type="text" name="colors"><br>
+
+    <label>Styles (comma separated):</label><br>
+    <input type="text" name="styles"><br>
+
+    <label>Brand:</label><br>
+    <input type="text" name="brand"><br>
+
+    <label>Price:</label><br>
+    <input type="number" name="price" step="0.01"><br>
+
+    <label>Second-hand:</label>
+    <input type="checkbox" name="second_hand"><br>
+
+    <label>Image:</label><br>
+    <input type="file" name="image"><br>
+
+    <button type="submit">Add Item</button>
+</form>
+
+<script>
+async function populateForm() {
+    // Fetch allowed values from backend
+    const resp = await fetch("/allowed_values");
+    const data = await resp.json();
+
+    const categorySelect = document.querySelector("select[name='category']");
+    data.categories.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c;
+        option.textContent = c;
+        categorySelect.appendChild(option);
+    });
+
+    const seasonSelect = document.querySelector("select[name='season']");
+    data.seasons.forEach(s => {
+        const option = document.createElement("option");
+        option.value = s;
+        option.textContent = s;
+        seasonSelect.appendChild(option);
+    });
+}
+
+populateForm();
+
+// Handle form submission
+document.getElementById("add-item-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    // Handle optional fields
+    const colors = formData.get("colors") ? formData.get("colors").split(",").map(c => c.trim()) : [];
+    const styles = formData.get("styles") ? formData.get("styles").split(",").map(s => s.trim()) : [];
+
+    // Handle image upload separately
+    let image_filename = null;
+    if (formData.get("image") && formData.get("image").size > 0) {
+        const imageData = new FormData();
+        imageData.append("file", formData.get("image"));
+
+        const uploadResp = await fetch("/upload_image", { // create this endpoint
+            method: "POST",
+            body: imageData
+        });
+        if (uploadResp.ok) {
+            const uploadData = await uploadResp.json();
+            image_filename = uploadData.filename;
+        } else {
+            alert("Image upload failed");
+            return;
+        }
+    }
+
+    // Prepare JSON payload for your API
+    const payload = {
+        name: formData.get("name"),
+        category: formData.get("category"),
+        season: formData.get("season") || null,
+        colors: colors,
+        style: styles,
+        brand: formData.get("brand") || null,
+        price: formData.get("price") ? parseFloat(formData.get("price")) : null,
+        second_hand: formData.get("second_hand") ? true : false,
+        image_filename: image_filename
+    };
+
+    const response = await fetch("/create_clothing_item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+        const newItem = await response.json();
+        alert(`Created item: ${newItem.name}`);
+        form.reset();
+    } else {
+        const error = await response.json();
+        alert("Error: " + JSON.stringify(error));
+    }
+});
+</script>
+
+</body>
+</html>

@@ -1,16 +1,29 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 from datetime import datetime
+from enum import Enum
 
-ALLOWED_CATEGORIES = [
-    "Top",
-    "Pants",
-    "Outerwear",
-    "Shoes",
-    "Accessories",
-    "Dresses",
-    "Bags",
-]
+
+class Category(str, Enum):
+    Top = "Top"
+    Pants = "Pants"
+    Outerwear = "Outerwear"
+    Shoes = "Shoes"
+    Accessories = "Accessories"
+    Dresses = "Dresses"
+    Bag = "Bag"
+
+
+ALLOWED_CATEGORIES = [c.value for c in Category]
+# [
+#     "Top",
+#     "Pants",
+#     "Outerwear",
+#     "Shoes",
+#     "Accessories",
+#     "Dresses",
+#     "Bag",
+# ]
 
 ALLOWED_SEASONS = ["Spring/Fall", "Summer", "Winter", "All-year"]
 
@@ -20,9 +33,9 @@ class ClothingItemBase(BaseModel):
     name: str = Field(
         ..., description="Name of the clothing item", example="Blue Jeans"
     )
-    category: Literal[
-        "Top", "Pants", "Outerwear", "Shoes", "Accessories", "Dresses", "Bags"
-    ] = Field(..., description="Category (e.g., pants, shirt, shoes)", example="Pants")
+    category: Category = Field(
+        ..., description="Category (e.g., pants, shirt, shoes)", example="Pants"
+    )
     style: List[str] = Field(
         default_factory=list,
         description="Style tags",
@@ -62,13 +75,9 @@ class ClothingItem(ClothingItemBase):
 
 
 class ClothingItemFilter(BaseModel):
-    category: Optional[
-        List[
-            Literal[
-                "Top", "Pants", "Outerwear", "Shoes", "Accessories", "Dresses", "Bags"
-            ]
-        ]
-    ] = Field(None, description="Filter by category", examples=[["Top", "Pants"]])
+    category: Optional[List[Category]] = Field(
+        None, description="Filter by category", examples=[["Top", "Pants"]]
+    )
     season: Optional[List[Literal["Spring/Fall", "Summer", "Winter", "All-year"]]] = (
         Field(None, description="Filter by season", examples=[["Summer"]])
     )
@@ -88,13 +97,9 @@ class ClothingItemUpdate(BaseModel):
     name: Optional[str] = Field(
         None, description="Name of the clothing item", example="Blue Jeans"
     )
-    category: Optional[
-        List[
-            Literal[
-                "Top", "Pants", "Outerwear", "Shoes", "Accessories", "Dresses", "Bags"
-            ]
-        ]
-    ] = Field(None, description="Category (e.g., pants, shirt, shoes)", example="Pants")
+    category: Optional[List[Category]] = Field(
+        None, description="Category (e.g., pants, shirt, shoes)", example="Pants"
+    )
     brand: Optional[str] = Field(None, description="Brand name", example="Levi's")
     color: Optional[List[str]] = Field(
         None, description="List of colors", example=["blue", "black"]
@@ -132,25 +137,25 @@ class OutfitBase(BaseModel):
         description="List of clothing item IDs included in the outfit",
         example=["item_id1", "item_id2"],
     )
-    occasion: Optional[str] = Field(
-        None, description="Occasion for the outfit", example="Casual"
-    )
+    # occasion: Optional[str] = Field(
+    #     None, description="Occasion for the outfit", example="Casual"
+    # )
     season: Optional[Literal["Spring/Fall", "Summer", "Winter", "All-year"]] = Field(
         None, description="Season for the outfit", example="Summer"
     )
-    comment: Optional[str] = Field(
-        None,
-        description="Additional comments about the outfit",
-        example="Great for beach days",
-    )
+    # comment: Optional[str] = Field(
+    #     None,
+    #     description="Additional comments about the outfit",
+    #     example="Great for beach days",
+    # )
     # which lookbook?
     # count number of times worn?
-    # For when I can create the outfit image with the items 
+    # For when I can create the outfit image with the items
     # image_filename: Optional[str] = Field(
     #     None,
     #     description="Filename of the outfit's image",
     #     example="outfit.jpg",
-    # ) 
+    # )
 
 
 # to be checked

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clothing Item Details</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        img { max-width: 300px; display: block; margin-bottom: 20px; }
+        .field { margin-bottom: 10px; }
+        .field span { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h2>Clothing Item Details</h2>
+
+<div id="item-details">
+    Loading...
+</div>
+
+<h3>Appearances</h3>
+<div id="appearances">
+    Loading appearances...
+</div>
+
+<script>
+
+async function loadAppearances(itemId) {
+    const container = document.getElementById("appearances");
+
+    try {
+        const resp = await fetch(`/item_appearances?item_id=${encodeURIComponent(itemId)}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const data = await resp.json();
+
+        let html = "";
+
+        // Outfits
+        html += "<h4>Outfits</h4>";
+        if (data.outfits.length === 0) {
+            html += "<p>None</p>";
+        } else {
+            html += "<ul>";
+            data.outfits.forEach(o => {
+                html += `<li>${o.name || o._id}</li>`;
+            });
+            html += "</ul>";
+        }
+
+        // Lookbooks
+        html += "<h4>Lookbooks</h4>";
+        if (data.lookbooks.length === 0) {
+            html += "<p>None</p>";
+        } else {
+            html += "<ul>";
+            data.lookbooks.forEach(l => {
+                html += `<li>${l.name || l._id}</li>`;
+            });
+            html += "</ul>";
+        }
+
+        // How many days
+        html += `<div><span>Times worn:</span> ${data.days}</div>`;
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        container.textContent = `Failed to load appearances: ${err}`;
+    }
+}
+
+
+async function loadItem() {
+    // Get item_id from query string, e.g., ?id=abc123
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get("id");
+    if (!itemId) {
+        document.getElementById("item-details").textContent = "No item ID provided.";
+        return;
+    }
+
+    try {
+        const resp = await fetch(`/items/${itemId}`);
+        if (!resp.ok) {
+            throw new Error(`Item not found: ${resp.status}`);
+        }
+        const item = await resp.json();
+
+        // Build HTML
+        let html = "";
+
+        if (item.image_filename) {
+            html += `<img src="/images/${item.image_filename}" alt="${item.name}">`;
+        }
+
+        html += `<div class="field"><span>Name:</span> ${item.name}</div>`;
+        html += `<div class="field"><span>Category:</span> ${item.category}</div>`;
+        html += `<div class="field"><span>Colors:</span> ${item.colors.join(", ")}</div>`;
+        html += `<div class="field"><span>Style:</span> ${item.style.join(", ")}</div>`;
+        if (item.season) html += `<div class="field"><span>Season:</span> ${item.season}</div>`;
+        if (item.brand) html += `<div class="field"><span>Brand:</span> ${item.brand}</div>`;
+        if (item.price) html += `<div class="field"><span>Price:</span> €${item.price.toFixed(2)}</div>`;
+        if (item.second_hand !== undefined) html += `<div class="field"><span>Second-hand:</span> ${item.second_hand ? "Yes" : "No"}</div>`;
+        if (item.comment) html += `<div class="field"><span>Comment:</span> ${item.comment}</div>`;
+        if (item.place) html += `<div class="field"><span>Place:</span> ${item.place}</div>`;
+        if (item.date_added) html += `<div class="field"><span>Date added:</span> ${new Date(item.date_added).toLocaleDateString()}</div>`;
+
+        document.getElementById("item-details").innerHTML = html;
+
+        loadAppearances(itemId);
+
+    } catch (err) {
+        document.getElementById("item-details").textContent = `Error loading item: ${err}`;
+    }
+}
+
+loadItem();
+</script>
+
+</body>
+</html>

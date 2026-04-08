@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Outfits</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+}
+
+.outfit {
+    margin-bottom: 40px;
+}
+
+.items-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.item {
+    text-align: center;
+}
+
+.item img {
+    height: 150px;
+    border-radius: 8px;
+}
+
+hr {
+    margin-top: 30px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Outfits</h1>
+
+<div id="outfits-container"></div>
+
+<script>
+async function loadOutfits() {
+    const response = await fetch("/outfits");
+    const outfits = await response.json();
+
+    const container = document.getElementById("outfits-container");
+
+    outfits.forEach(outfit => {
+
+        const outfitDiv = document.createElement("div");
+        outfitDiv.className = "outfit";
+
+        const title = document.createElement("h2");
+        title.textContent = outfit.name;
+        outfitDiv.appendChild(title);
+
+        const itemsRow = document.createElement("div");
+        itemsRow.className = "items-row";
+
+        outfit.items_data.forEach(item => {
+
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "item";
+
+            if (item.image_filename) {
+                const img = document.createElement("img");
+                img.src = "/images/" + item.image_filename;
+                itemDiv.appendChild(img);
+            }
+
+            const name = document.createElement("p");
+            name.textContent = item.name;
+
+            itemDiv.appendChild(name);
+
+            itemsRow.appendChild(itemDiv);
+        });
+
+        outfitDiv.appendChild(itemsRow);
+
+        container.appendChild(outfitDiv);
+
+        const hr = document.createElement("hr");
+        container.appendChild(hr);
+    });
+}
+
+loadOutfits();
+</script>
+
+</body>
+</html>
