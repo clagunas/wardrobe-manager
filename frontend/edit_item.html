@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Edit Clothing Item</title>
+
+<style>
+body { font-family: sans-serif; margin: 20px; }
+label { font-weight: bold; }
+input, select, button { margin-top: 5px; margin-bottom: 15px; }
+
+#back-button {
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+#back-button:hover {
+    background: #f9f9f9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+</style>
+
+</head>
+
+<body>
+<button id="back-button">← Back to Items</button>
+
+<h2>Edit Clothing Item</h2>
+
+<form id="edit-item-form">
+
+<label>Name:</label><br>
+<input type="text" name="name"><br>
+
+<label>Category:</label><br>
+<select name="category"></select><br>
+
+<label>Style:</label><br>
+<input type="text" name="style"><br>
+
+<label>Season:</label><br>
+<select name="season"></select><br>
+
+<label>Brand:</label><br>
+<input type="text" name="brand"><br>
+
+<label>Price:</label><br>
+<input type="number" name="price" step="0.01"><br>
+
+<label>Date Added:</label><br>
+<input type="date" name="date_added"><br>
+
+<label>Second-hand:</label>
+<input type="checkbox" name="second_hand"><br>
+
+<label>Place:</label><br>
+<input type="text" name="place"><br>
+
+<label>Colors (comma separated):</label><br>
+<input type="text" name="colors"><br>
+
+<label>Comment:</label><br>
+<textarea name="comment"></textarea><br>
+
+<label>Image:</label><br>
+<input type="file" name="image"><br>
+
+<button type="submit">Save Changes</button>
+
+</form>
+
+
+<script>
+
+let itemId = null
+let currentItem = null
+
+
+function getItemId() {
+    const params = new URLSearchParams(window.location.search)
+    return params.get("id")
+}
+
+
+async function populateAllowedValues() {
+
+    const resp = await fetch("/allowed_values")
+    const data = await resp.json()
+
+    const categorySelect = document.querySelector("select[name='category']")
+    data.categories.forEach(c => {
+        const option = document.createElement("option")
+        option.value = c
+        option.textContent = c
+        categorySelect.appendChild(option)
+    })
+
+    const seasonSelect = document.querySelector("select[name='season']")
+    data.seasons.forEach(s => {
+        const option = document.createElement("option")
+        option.value = s
+        option.textContent = s
+        seasonSelect.appendChild(option)
+    })
+
+}
+
+
+
+// async function loadItem() {
+
+//     const resp = await fetch(`/items/${itemId}`)
+//     const item = await resp.json()
+
+//     console.log("Loaded item:", item)
+
+//     document.querySelector("input[name='name']").value = item.name || ""
+
+//     document.querySelector("select[name='category']").value =
+//         item.category || ""
+
+//     document.querySelector("select[name='season']").value =
+//         item.season || ""
+
+//     document.querySelector("input[name='colors']").value =
+//         item.colors ? item.colors.join(", ") : ""
+
+//     document.querySelector("input[name='brand']").value =
+//         item.brand || ""
+
+//     document.querySelector("input[name='price']").value =
+//         item.price || ""
+
+//     document.querySelector("input[name='second_hand']").checked =
+//         item.second_hand || false
+// }
+
+async function loadItem() {
+
+    const resp = await fetch(`/items/${itemId}`)
+    const item = await resp.json()
+
+    console.log("Loaded item:", item)
+
+    document.querySelector("input[name='name']").value = item.name || ""
+
+    document.querySelector("select[name='category']").value =
+        item.category || ""
+
+    // style
+
+    document.querySelector("select[name='season']").value =
+        item.season || ""
+
+    document.querySelector("input[name='brand']").value =
+        item.brand || ""
+
+    document.querySelector("input[name='price']").value =
+        item.price || ""
+
+    if (item.date_added) {
+        document.querySelector("input[name='date_added']").value =
+            item.date_added.split("T")[0]
+    }
+
+    document.querySelector("input[name='second_hand']").checked =
+        item.second_hand || false
+
+    document.querySelector("input[name='place']").value =
+        item.place || ""
+
+    document.querySelector("input[name='colors']").value =
+        item.colors ? item.colors.join(", ") : ""
+
+    document.querySelector("textarea[name='comment']").value =
+        item.comment || ""
+
+}
+
+
+async function init() {
+
+    itemId = getItemId()
+
+    if (!itemId) {
+        alert("No item ID provided")
+        return
+    }
+
+    await populateAllowedValues()
+    await loadItem()
+
+}
+
+
+init()
+
+
+
+document.getElementById("edit-item-form").addEventListener("submit", async (e) => {
+
+    e.preventDefault()
+
+    const form = e.target
+    const formData = new FormData(form)
+
+    const colors = formData.get("colors")
+        ? formData.get("colors").split(",").map(c => c.trim())
+        : []
+
+    let image_filename = null
+
+    if (formData.get("image") && formData.get("image").size > 0) {
+
+        const imageData = new FormData()
+        imageData.append("file", formData.get("image"))
+
+        const uploadResp = await fetch("/upload_image", {
+            method: "POST",
+            body: imageData
+        })
+
+        if (!uploadResp.ok) {
+            alert("Image upload failed")
+            return
+        }
+
+        const uploadData = await uploadResp.json()
+        image_filename = uploadData.filename
+    }
+
+    const payload = {}
+
+    if (formData.get("name")) payload.name = formData.get("name")
+    if (formData.get("category")) payload.category = formData.get("category")
+    if (formData.get("season")) payload.season = formData.get("season")
+    if (colors.length) payload.colors = colors
+    if (formData.get("brand")) payload.brand = formData.get("brand")
+    if (formData.get("price")) payload.price = parseFloat(formData.get("price"))
+    if (formData.get("place")) payload.place = formData.get("place")
+    if (formData.get("comment")) payload.comment = formData.get("comment")
+    if (formData.get("date_added")) payload.date_added = formData.get("date_added")
+
+    payload.second_hand = formData.get("second_hand") ? true : false
+
+    if (image_filename) payload.image_filename = image_filename
+
+
+    const response = await fetch(`/modify_item/${itemId}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+
+
+    if (response.ok) {
+
+        const updated = await response.json()
+        alert(`Updated: ${updated.name}`)
+
+    } else {
+
+        const error = await response.json()
+        alert("Error: " + JSON.stringify(error))
+
+    }
+
+})
+
+document.getElementById("back-button").addEventListener("click", () => {
+    window.location.href = "items.html";
+});
+
+</script>
+
+</body>
+</html>

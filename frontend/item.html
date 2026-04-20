@@ -8,10 +8,41 @@
         img { max-width: 300px; display: block; margin-bottom: 20px; }
         .field { margin-bottom: 10px; }
         .field span { font-weight: bold; }
+        
+        #back-button {
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        #back-button:hover {
+            background: #f9f9f9;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        #edit-button {
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        #edit-button:hover {
+            background: #f9f9f9;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
 
+<button id="back-button">← Back to Items</button>
+<button id="edit-button">✎ Edit Item</button>
 <h2>Clothing Item Details</h2>
 
 <div id="item-details">
@@ -29,7 +60,7 @@ async function loadAppearances(itemId) {
     const container = document.getElementById("appearances");
 
     try {
-        const resp = await fetch(`/item_appearances?item_id=${encodeURIComponent(itemId)}`);
+        const resp = await fetch(`/item_appearances/${itemId}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
         const data = await resp.json();
@@ -96,15 +127,15 @@ async function loadItem() {
 
         html += `<div class="field"><span>Name:</span> ${item.name}</div>`;
         html += `<div class="field"><span>Category:</span> ${item.category}</div>`;
-        html += `<div class="field"><span>Colors:</span> ${item.colors.join(", ")}</div>`;
         html += `<div class="field"><span>Style:</span> ${item.style.join(", ")}</div>`;
         if (item.season) html += `<div class="field"><span>Season:</span> ${item.season}</div>`;
         if (item.brand) html += `<div class="field"><span>Brand:</span> ${item.brand}</div>`;
         if (item.price) html += `<div class="field"><span>Price:</span> €${item.price.toFixed(2)}</div>`;
-        if (item.second_hand !== undefined) html += `<div class="field"><span>Second-hand:</span> ${item.second_hand ? "Yes" : "No"}</div>`;
-        if (item.comment) html += `<div class="field"><span>Comment:</span> ${item.comment}</div>`;
-        if (item.place) html += `<div class="field"><span>Place:</span> ${item.place}</div>`;
         if (item.date_added) html += `<div class="field"><span>Date added:</span> ${new Date(item.date_added).toLocaleDateString()}</div>`;
+        if (item.second_hand !== undefined) html += `<div class="field"><span>Second-hand:</span> ${item.second_hand ? "Yes" : "No"}</div>`;
+        if (item.place) html += `<div class="field"><span>Place:</span> ${item.place}</div>`;
+        html += `<div class="field"><span>Colors:</span> ${item.colors.join(", ")}</div>`;
+        if (item.comment) html += `<div class="field"><span>Comment:</span> ${item.comment}</div>`;
 
         document.getElementById("item-details").innerHTML = html;
 
@@ -116,6 +147,19 @@ async function loadItem() {
 }
 
 loadItem();
+document.getElementById("back-button").addEventListener("click", () => {
+    window.location.href = "items.html";
+});
+document.getElementById("edit-button").addEventListener("click", () => {
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get("id");
+    if (itemId) {
+        window.location.href = `edit_item.html?id=${encodeURIComponent(itemId)}`;
+    } else {
+        alert("No item ID found for editing.");
+    }
+});
+
 </script>
 
 </body>

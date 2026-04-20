@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Outfit</title>
+
+<style>
+body{
+    font-family: sans-serif;
+    margin:40px;
+}
+
+h1{
+    margin-bottom:30px;
+}
+
+.items-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+    gap:20px;
+}
+
+/* same card aesthetic */
+.item-card{
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    text-align:center;
+    background:white;
+    transition: box-shadow 0.2s ease;
+}
+
+.item-card:hover{
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+
+.item-card img{
+    width:100%;
+    max-height:200px;
+    object-fit:contain;
+    margin-bottom:8px;
+}
+
+.item-name{
+    font-weight:bold;
+}
+
+.item-meta{
+    font-size:0.85em;
+    color:#555;
+}
+
+#back-button {
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+#back-button:hover {
+    background: #f9f9f9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+#calendar-button {
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+#calendar-button:hover {
+    background: #f9f9f9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+</style>
+</head>
+
+<body>
+
+<button id="back-button">← Back to Outfits</button>
+<button id="calendar-button">📅 Add to Calendar</button>
+<h1 id="outfit-name">Loading outfit...</h1>
+<p id="outfit-season"></p>
+<p id="outfit-appearances"></p>
+
+<div id="items-container" class="items-grid"></div>
+
+<script>
+
+const arrayFields = ["colors","category","season"];
+
+function formatField(value, field){
+    if(!value) return "";
+    if(arrayFields.includes(field)){
+        return Array.isArray(value) ? value.join(", ") : value;
+    }
+    return value;
+}
+
+function getOutfitId(){
+    const params = new URLSearchParams(window.location.search);
+    return params.get("id");
+}
+
+async function loadOutfit(){
+
+    const outfitId = getOutfitId();
+
+    if(!outfitId){
+        document.getElementById("outfit-name").textContent = "Outfit not found";
+        return;
+    }
+
+    // 1. Fetch outfit
+    const outfitResponse = await fetch(`/outfits/${outfitId}`);
+    const outfitData = await outfitResponse.json();
+
+    // 2. Fetch items
+    const itemsResponse = await fetch(`/outfits/get_items/${outfitId}`);
+    const itemsData = await itemsResponse.json();
+
+    // 3. Fetch appearances
+    const appearancesResponse = await fetch(`/outfit_appearances/${outfitId}`);
+    const appearancesData = await appearancesResponse.json();
+
+    const container = document.getElementById("items-container");
+    container.innerHTML = "";
+
+    // Render outfit info
+    document.getElementById("outfit-name").textContent = outfitData.name;
+    document.getElementById("outfit-season").textContent = 
+        outfitData.season ? `Season: ${outfitData.season}` : "";
+    document.getElementById("outfit-appearances").textContent =
+        `Included in ${appearancesData.lookbooks.length} lookbook(s), worn on ${appearancesData.days} day(s)`;
+
+    itemsData.forEach(item => {
+
+        const card = document.createElement("div");
+        card.className = "item-card";
+
+        if(item.image_filename){
+            const img = document.createElement("img");
+            img.src = "/images/" + item.image_filename;
+            card.appendChild(img);
+        }
+
+        const name = document.createElement("div");
+        name.className = "item-name";
+        name.textContent = item.name;
+        card.appendChild(name);
+
+        const colors = document.createElement("div");
+        colors.className = "item-meta";
+        colors.textContent = "Colors: " + formatField(item.colors,"colors");
+        card.appendChild(colors);
+
+        const season = document.createElement("div");
+        season.className = "item-meta";
+        season.textContent = "Season: " + formatField(item.season,"season");
+        card.appendChild(season);
+
+        const category = document.createElement("div");
+        category.className = "item-meta";
+        category.textContent = "Category: " + formatField(item.category,"category");
+        card.appendChild(category);
+
+        container.appendChild(card);
+
+    });
+}
+
+loadOutfit();
+
+document.getElementById("back-button").addEventListener("click", () => {
+    window.location.href = "outfits.html";
+});
+
+document.getElementById("calendar-button").addEventListener("click", () => {
+    // Implementation for adding to calendar
+}); 
+
+</script>
+
+</body>
+</html>

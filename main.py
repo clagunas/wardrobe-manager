@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
 from uuid import uuid4
@@ -47,15 +48,18 @@ def mongo_to_dict(item):
 @app.get("/", tags=["Root"])
 async def read_root():  # (collection: AsyncIOMotorCollection = Depends(get_items_collection)):
     """Welcome endpoint"""
-    items_count = await collection.count_documents({})
-    return {
-        "message": "Welcome to the Clothing Items API!",
-        "docs": "/docs",
-        "show_all": "/static/items.html",
-        "items_count": items_count,
-    }
+    
+    # items_count = await collection.count_documents({})
+    # return {
+    #     "message": "Welcome to the Clothing Items API!",
+    #     "docs": "/docs",
+    #     "show_all": "/static/items.html",
+    #     "items_count": items_count,
+    # }
+    return RedirectResponse("/static/index.html")
 
-# Helper function
+# HELPER FUNTIONS
+
 @app.get("/allowed_values", tags=["Helper"])
 async def allowed_values():
     return {
@@ -63,7 +67,7 @@ async def allowed_values():
         "seasons": ALLOWED_SEASONS
     }
 
-@app.get("/item_appearances", response_model=dict, tags=["Helper"])
+@app.get("/item_appearances/{item_id}", response_model=dict, tags=["Helper"])
 async def find_item_appearances(item_id: str):
     """Find outfits, lookbooks, and calendar entries that include a specific clothing item"""
     outfits = []
@@ -82,7 +86,7 @@ async def find_item_appearances(item_id: str):
         # I don't want the days but just a count 
     return {"outfits": outfits, "lookbooks": lookbooks, "days": days_count}
 
-@app.get("/outfit_appearances", response_model=dict, tags=["Helper"])
+@app.get("/outfit_appearances/{outfit_id}", response_model=dict, tags=["Helper"])
 async def find_outfit_appearances(outfit_id: str):
     """Find lookbooks, and calendar entries that include a specific outfit"""
     ## I don't know yet if all outfits and items will be listed under items
@@ -98,7 +102,7 @@ async def find_outfit_appearances(outfit_id: str):
         # I don't want the days but just a count 
     return {"lookbooks": lookbooks, "days": days_count}
 
-# Helper function, to be checked
+# to be changed maybe
 @app.post("/upload_image", tags=["Helper"])
 async def upload_image(file: UploadFile = File(...)):
     ext = file.filename.split(".")[-1]
@@ -107,6 +111,9 @@ async def upload_image(file: UploadFile = File(...)):
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"filename": filename}
+
+
+# CLOTHING ITEM ROUTES
 
 @app.get("/items", response_model=List[ClothingItem], tags=["Items"])
 async def get_all_clothing_items():  # (collection=Depends(get_items_collection)):
@@ -199,12 +206,27 @@ async def modify_clothing_item(item_id: str, item: ClothingItemUpdate):
     updated_item = await collection.find_one({"_id": ObjectId(item_id)})
     return mongo_to_dict(updated_item)
 
+# delete an item by id
+@app.delete("/delete_item/{item_id}", status_code=204, tags=["Items"])
+async def delete_clothing_item(item_id: str):
+    """Delete a clothing item by ID"""
+    result = await collection.delete_one({"_id": ObjectId(item_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return None
+
+# OUTFIT ROUTES
 
 # check all outfit routes
 @app.post("/create_outfit", response_model=Outfit, status_code=201, tags=["Outfits"])
 async def create_outfit(outfit: OutfitBase):
     """Create a new outfit in the 'outfits' collection"""
     outfit_dict = outfit.model_dump()
+    # check if an outfit with the same items already exists
+    outfit_dict["items"] = sorted(outfit_dict["items"])
+    exists = await outfit_collection.count_documents({"items": outfit_dict["items"]}) > 0
+    if exists:
+        raise HTTPException(status_code=400, detail="Outfit with the same items already exists")
     inserted = await outfit_collection.insert_one(outfit_dict)
     outfit_dict["id"] = str(inserted.inserted_id)
     return outfit_dict
@@ -258,3 +280,11 @@ async def get_outfit_items(outfit_id: str):
         if item:
             items.append(mongo_to_dict(item))
     return items
+
+@app.delete("/delete_outfit/{outfit_id}", status_code=204, tags=["Outfits"])
+async def delete_outfit(outfit_id: str):
+    """Delete an outfit by ID"""
+    result = await outfit_collection.delete_one({"_id": ObjectId(outfit_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Outfit not found")
+    return None

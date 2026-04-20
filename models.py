@@ -101,7 +101,7 @@ class ClothingItemUpdate(BaseModel):
         None, description="Category (e.g., pants, shirt, shoes)", example="Pants"
     )
     brand: Optional[str] = Field(None, description="Brand name", example="Levi's")
-    color: Optional[List[str]] = Field(
+    colors: Optional[List[str]] = Field(
         None, description="List of colors", example=["blue", "black"]
     )
     second_hand: Optional[bool] = Field(

@@ -6,27 +6,66 @@
 
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     margin: 40px;
 }
 
 .outfit {
-    margin-bottom: 40px;
+    margin-bottom: 50px;
+}
+
+.outfit-title a{
+    text-decoration: none;
+    color: #2a5bd7;
 }
 
 .items-row {
     display: flex;
     gap: 20px;
-    align-items: center;
+    flex-wrap: wrap;
 }
 
+/* ITEM CARD (same style as items page) */
 .item {
+    width: 200px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    background: white;
     text-align: center;
 }
 
 .item img {
-    height: 150px;
-    border-radius: 8px;
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+.item-name {
+    font-weight: bold;
+}
+
+.item-meta {
+    font-size: 0.85em;
+    color: #555;
+}
+
+.item:hover{
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+#create-outfit-button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+#create-outfit-button:hover {
+  background: #f9f9f9;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 hr {
@@ -39,22 +78,45 @@ hr {
 
 <h1>Outfits</h1>
 
+<button id="create-outfit-button"> Create outfit</button>
+
 <div id="outfits-container"></div>
 
 <script>
+
+const arrayFields = ["colors","category","season"];
+
+function formatField(value, field){
+    if(!value) return "";
+    if(arrayFields.includes(field)){
+        return Array.isArray(value) ? value.join(", ") : value;
+    }
+    return value;
+}
+
 async function loadOutfits() {
+
     const response = await fetch("/outfits");
     const outfits = await response.json();
 
     const container = document.getElementById("outfits-container");
+    container.innerHTML = "";
 
     outfits.forEach(outfit => {
 
         const outfitDiv = document.createElement("div");
         outfitDiv.className = "outfit";
 
+        /* CLICKABLE OUTFIT NAME */
         const title = document.createElement("h2");
-        title.textContent = outfit.name;
+        title.className = "outfit-title";
+
+        const link = document.createElement("a");
+        // #console.log(outfit);
+        link.href = `outfit.html?id=${encodeURIComponent(outfit._id)}`;
+        link.textContent = outfit.name;
+
+        title.appendChild(link);
         outfitDiv.appendChild(title);
 
         const itemsRow = document.createElement("div");
@@ -65,22 +127,42 @@ async function loadOutfits() {
             const itemDiv = document.createElement("div");
             itemDiv.className = "item";
 
+            /* IMAGE */
             if (item.image_filename) {
                 const img = document.createElement("img");
                 img.src = "/images/" + item.image_filename;
+                img.alt = item.name;
                 itemDiv.appendChild(img);
             }
 
-            const name = document.createElement("p");
-            name.textContent = item.name;
+            /* NAME */
+            // const name = document.createElement("div");
+            // name.className = "item-name";
+            // name.textContent = item.name;
+            // itemDiv.appendChild(name);
 
-            itemDiv.appendChild(name);
+            /* COLORS */
+            // const colors = document.createElement("div");
+            // colors.className = "item-meta";
+            // colors.textContent = "Colors: " + formatField(item.colors,"colors");
+            // itemDiv.appendChild(colors);
+
+            /* SEASON */
+            // const season = document.createElement("div");
+            // season.className = "item-meta";
+            // season.textContent = "Season: " + formatField(item.season,"season");
+            // itemDiv.appendChild(season);
+
+            /* CATEGORY */
+            // const category = document.createElement("div");
+            // category.className = "item-meta";
+            // category.textContent = "Category: " + formatField(item.category,"category");
+            // itemDiv.appendChild(category);
 
             itemsRow.appendChild(itemDiv);
         });
 
         outfitDiv.appendChild(itemsRow);
-
         container.appendChild(outfitDiv);
 
         const hr = document.createElement("hr");
@@ -89,6 +171,11 @@ async function loadOutfits() {
 }
 
 loadOutfits();
+
+document.getElementById("create-outfit-button").addEventListener("click", () => {
+    window.location.href = "create_outfit.html";
+});
+
 </script>
 
 </body>

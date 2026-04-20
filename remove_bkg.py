@@ -7,24 +7,41 @@ from tqdm import tqdm
 from rembg import remove, new_session
 from PIL import Image
 from skimage import morphology
-import argparser
+import argparse
 
 # new
 session = new_session("u2net")
 
 
 def remove_background(input_path, output_path):
-    with Image.open(input_path) as img:
-        result = remove(
-            img,
-            session=session,
-            alpha_matting=True,
-            alpha_matting_foreground_threshold=240,
-            alpha_matting_background_threshold=10,
-            alpha_matting_erode_size=10,
-        )
 
-    result.save(output_path)
+    if not input_path.lower().endswith((".png", ".jpg", ".jpeg")):
+            print("Invalid image file format.")
+    else:        
+        with Image.open(input_path) as img:
+            result = remove(
+                img,
+                session=session,
+                alpha_matting=True,
+                alpha_matting_foreground_threshold=240,
+                alpha_matting_background_threshold=10,
+                alpha_matting_erode_size=10,
+            )
+
+        #result.save(output_path)
+        # Ensure image has alpha channel for transparency
+        if result.mode != "RGBA":
+            result = result.convert("RGBA")
+
+        # Crop to non-transparent content
+        bbox = result.getbbox()  # Bounding box of non-zero alpha pixels
+        if bbox:
+            cropped = result.crop(bbox)
+        else:
+            cropped = result  # fallback if somehow empty
+
+        # Save the cropped image
+        cropped.save(output_path)
 
 
 if "__main__" == __name__:
@@ -33,7 +50,7 @@ if "__main__" == __name__:
     the entire folder or just a single image.
     '''
 
-    parser = argparser.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Remove background from clothing item images"
     )
     parser.add_argument(
@@ -59,9 +76,6 @@ if "__main__" == __name__:
 
     if args.image_filename:
 
-        if not args.image_filename.lower().endswith((".png", ".jpg", ".jpeg")):
-            print("Invalid image file format.")
-            exit(1)
         input_path = os.path.join(args.input_folder, args.image_filename)
         output_path = os.path.join(
             args.output_folder, os.path.splitext(args.image_filename)[0] + ".png"
@@ -72,15 +86,13 @@ if "__main__" == __name__:
 
         for filename in tqdm(os.listdir(args.input_folder), desc="Processing images"):
 
-            if not filename.lower().endswith((".png", ".jpg", ".jpeg")):
-                continue
-
             input_path = os.path.join(args.input_folder, filename)
             output_path = os.path.join(
                 args.output_folder, os.path.splitext(filename)[0] + ".png"
             )
 
             remove_background(input_path, output_path)
+            
     # path = os.path.join(input_folder, filename)
 
     # img = Image.open(path).convert("RGB")

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Clothing Items</title>
+<title>Create Outfit</title>
 
 <style>
 body {
@@ -41,6 +41,51 @@ h1 {
   gap: 20px;
 }
 
+#layout{
+  display:grid;
+  grid-template-columns: 1fr 260px;
+  gap:25px;
+}
+
+#selected-panel{
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:12px;
+  background:white;
+  height:fit-content;
+  position:sticky;
+  top:20px;
+}
+
+#selected-items{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:10px;
+}
+
+.selected-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid #eee;
+  border-radius:6px;
+  padding:6px;
+}
+
+.selected-item img{
+  width:40px;
+  height:40px;
+  object-fit:contain;
+}
+
+.remove-item{
+  margin-left:auto;
+  cursor:pointer;
+  color:red;
+  font-weight:bold;
+}
+
 /* CARD */
 
 .item-card {
@@ -63,39 +108,48 @@ h1 {
   margin-bottom: 6px;
 }
 
-.item-name a {
-  text-decoration: none;
-  color: #2a5bd7;
-}
-
 .item-meta {
   font-size: 0.9em;
   color: #555;
-  margin: 2px 0;
 }
 
-#create-outfit-button, #create-lookbook-button {
+/* outfit form */
+
+#outfit-form {
+  margin-bottom: 20px;
+}
+
+#create-outfit-button {
   padding: 8px 16px;
   border: 1px solid #ddd;
   border-radius: 6px;
   background: white;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
 }
-#create-outfit-button:hover, #create-lookbook-button:hover {
-  background: #f9f9f9;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
 </style>
 </head>
 
 <body>
 
-<h1>Clothing Items</h1>
+<h1>Create Outfit</h1>
 
-<button id="create-outfit-button"> Create outfit</button>
-<button id="create-lookbook-button"> Create lookbook</button>
+<div id="outfit-form">
+<label>Outfit Name</label>
+<input id="outfit-name" placeholder="Casual Summer Look">
+
+<label>Season</label>
+<select id="season">
+<option value="">None</option>
+<option value="Spring/Fall">Spring/Fall</option>
+<option value="Summer">Summer</option>
+<option value="Winter">Winter</option>
+<option value="All-year">All-year</option>
+</select>
+
+<button id="create-outfit-button">Create Outfit</button>
+</div>
+
+<!-- SAME FILTERS AS IN ITEMS -->
 
 <div id="filters">
 
@@ -127,12 +181,28 @@ Second-hand
 
 </div>
 
-<div id="items-grid"></div>
+<!-- <div id="items-grid"></div> -->
+<div id="layout">
+
+  <div id="items-section">
+      <div id="items-grid"></div>
+  </div>
+
+  <div id="selected-panel">
+      <h3>Current Outfit</h3>
+      <div id="selected-count">Selected: 0</div>
+      <div id="selected-items"></div>
+  </div>
+
+</div>
 
 <script>
 
 const API_BASE = "http://127.0.0.1:8000";
 const arrayFields = ["colors", "category", "season"];
+
+/* store selected items */
+const selectedItems = new Map();
 
 /* ---------- helpers ---------- */
 
@@ -142,10 +212,6 @@ function formatField(value, fieldName) {
     return Array.isArray(value) ? value.join(", ") : value;
   }
   return value;
-}
-
-function getSelectValues(id) {
-  return [...document.getElementById(id).selectedOptions].map(o => o.value);
 }
 
 function getInputList(id) {
@@ -184,6 +250,49 @@ function collectFilters() {
   return filters;
 }
 
+/* ---------- update selected panel ---------- */
+
+function updateSelectedPanel(){
+
+  const container = document.getElementById("selected-items");
+  const counter = document.getElementById("selected-count");
+
+  container.innerHTML = "";
+
+  selectedItems.forEach(item => {
+
+    const div = document.createElement("div");
+    div.className = "selected-item";
+
+    if(item.image_filename){
+      const img = document.createElement("img");
+      img.src = `/images/${item.image_filename}`;
+      div.appendChild(img);
+    }
+
+    const name = document.createElement("div");
+    name.textContent = item.name;
+    div.appendChild(name);
+
+    const remove = document.createElement("div");
+    remove.textContent = "✕";
+    remove.className = "remove-item";
+
+    remove.onclick = () => {
+        selectedItems.delete(item.id);
+        updateSelectedPanel();
+        loadItems(); // refresh grid to uncheck
+    };
+
+    div.appendChild(remove);
+
+    container.appendChild(div);
+
+  });
+
+  counter.textContent = `Selected: ${selectedItems.size}`;
+}
+
 /* ---------- render items ---------- */
 
 function renderItems(items) {
@@ -201,6 +310,28 @@ function renderItems(items) {
     const card = document.createElement("div");
     card.className = "item-card";
 
+    /* checkbox */
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = item.id;
+
+    checkbox.checked = selectedItems.has(item.id);
+
+    checkbox.addEventListener("change", () => {
+
+      if (checkbox.checked)
+        selectedItems.set(item.id, item);
+      else
+        selectedItems.delete(item.id);
+        updateSelectedPanel();
+
+    });
+
+    card.appendChild(checkbox);
+
+    /* image */
+
     if (item.image_filename) {
       const img = document.createElement("img");
       img.src = `/images/${item.image_filename}`;
@@ -208,19 +339,15 @@ function renderItems(items) {
       card.appendChild(img);
     }
 
+    /* name */
+
     const nameDiv = document.createElement("div");
     nameDiv.className = "item-name";
-
-    if (item.id) {
-      const link = document.createElement("a");
-      link.href = `item.html?id=${encodeURIComponent(item.id)}`;
-      link.textContent = item.name;
-      nameDiv.appendChild(link);
-    } else {
-      nameDiv.textContent = item.name;
-    }
+    nameDiv.textContent = item.name;
 
     card.appendChild(nameDiv);
+
+    /* metadata */
 
     ["colors", "season", "category"].forEach(field => {
       const meta = document.createElement("div");
@@ -234,6 +361,7 @@ function renderItems(items) {
     grid.appendChild(card);
 
   });
+
 }
 
 /* ---------- fetch items ---------- */
@@ -272,22 +400,74 @@ async function loadItems() {
   }
 }
 
-/* ---------- auto update filters ---------- */
+/* ---------- create outfit ---------- */
+
+async function createOutfit() {
+
+  const name = document.getElementById("outfit-name").value.trim();
+  const season = document.getElementById("season").value;
+
+  const items = Array.from(selectedItems.keys());
+
+  if (!name) {
+    alert("Outfit name required");
+    return;
+  }
+
+  if (items.length === 0) {
+    alert("Select at least one item");
+    return;
+  }
+
+  const payload = { name, items };
+
+  if (season) payload.season = season;
+
+  // await fetch(`${API_BASE}/create_outfit`, {
+  //   method: "POST",
+  //   headers: {"Content-Type": "application/json"},
+  //   body: JSON.stringify(payload)
+  // });
+
+  // alert("Outfit created!");
+
+  try {
+
+    const response = await fetch(`${API_BASE}/create_outfit`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.detail || "Failed to create outfit");
+      return;
+    }
+
+    alert("Outfit created!");
+
+  } catch(err) {
+
+    console.error(err);
+    alert("Server error");
+
+  }
+
+}
+
+/* ---------- events ---------- */
 
 document.querySelectorAll("#filters input")
   .forEach(el => el.addEventListener("change", loadItems));
 
+document.getElementById("create-outfit-button")
+  .addEventListener("click", createOutfit);
+
 /* ---------- initial load ---------- */
 
 loadItems();
-
-document.getElementById("create-outfit-button").addEventListener("click", () => {
-    window.location.href = "create_outfit.html";
-});
-
-document.getElementById("create-lookbook-button").addEventListener("click", () => {
-    window.location.href = "create_lookbook.html";
-});
 
 </script>
 
