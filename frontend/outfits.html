@@ -1,4 +1,115 @@
 <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Outfits</title>
+
+  <!-- Shared styles first -->
+  <link rel="stylesheet" href="css/styles.css">
+
+</head>
+
+<body>
+
+<h1>Outfits</h1>
+
+<button class="action-button">Create outfit</button>
+<button class="action-button">Create lookbook</button>
+
+<div id="outfits-grid" class="grid-layout"></div>
+
+<script>
+
+const API_BASE = "http://127.0.0.1:8000";
+
+/* ---------- render outfits ---------- */
+
+function renderOutfits(outfits) {
+
+  const grid = document.getElementById("outfits-grid");
+  grid.innerHTML = "";
+
+  if (!outfits.length) {
+    grid.innerHTML = "No outfits found.";
+    return;
+  }
+
+  outfits.forEach(outfit => {
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    /* IMAGE */
+    if (outfit.image_filename) {
+      const img = document.createElement("img");
+      img.src = `/images/outfits/${outfit.image_filename}`;
+      img.alt = outfit.name || "";
+      card.appendChild(img);
+    }
+
+    /* NAME (clickable) */
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "card-name";
+
+    const link = document.createElement("a");
+    link.href = `outfit.html?id=${encodeURIComponent(outfit._id)}`;
+    link.textContent = outfit.name || "Unnamed Outfit";
+
+    nameDiv.appendChild(link);
+    card.appendChild(nameDiv);
+
+    /* OPTIONAL META */
+    if (outfit.items_data) {
+      const meta = document.createElement("div");
+      meta.className = "card-meta";
+      meta.textContent = `${outfit.items_data.length} items`;
+      card.appendChild(meta);
+    }
+
+    grid.appendChild(card);
+  });
+}
+
+/* ---------- load outfits ---------- */
+
+async function loadOutfits() {
+
+  try {
+    const response = await fetch(`${API_BASE}/outfits`);
+    const outfits = await response.json();
+
+    renderOutfits(outfits);
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("outfits-grid").innerHTML =
+      "Failed to load outfits.";
+  }
+}
+
+/* ---------- initial load ---------- */
+
+loadOutfits();
+
+/* ---------- buttons ---------- */
+
+document.getElementById("create-outfit-button").addEventListener("click", () => {
+  window.location.href = "create_outfit.html";
+});
+
+document.getElementById("create-lookbook-button").addEventListener("click", () => {
+  window.location.href = "create_lookbook.html";
+});
+
+</script>
+
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -179,4 +290,4 @@ document.getElementById("create-outfit-button").addEventListener("click", () => 
 </script>
 
 </body>
-</html>
+</html> -->

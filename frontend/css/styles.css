@@ -7,28 +7,27 @@ h1 {
   margin-bottom: 10px;
 }
 
-/* FILTER BAR */
+/* BUTTONS */
 
-#filters {
+.action-button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  margin-right: 10px;
   margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
 }
 
-#filters label {
-  font-size: 0.9em;
-}
-
-#filters select,
-#filters input {
-  padding: 4px;
+.action-button:hover {
+  background: #f9f9f9;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 /* GRID */
 
-#items-grid {
+.grid-layout {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
@@ -36,7 +35,7 @@ h1 {
 
 /* CARD */
 
-.item-card {
+.card {
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 12px;
@@ -44,23 +43,24 @@ h1 {
   text-align: center;
 }
 
-.item-card img {
+.card img {
   width: 100%;
-  max-height: 200px;
+  max-height: 220px;
   object-fit: contain;
   margin-bottom: 10px;
 }
 
-.item-name {
+.card-name {
   font-weight: bold;
   margin-bottom: 6px;
 }
 
-.item-meta {
-  font-size: 0.9em;
-  color: #555;
+.card-name a {
+  text-decoration: none;
+  color: #2a5bd7;
 }
 
-.item:hover{
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+.card-meta {
+  font-size: 0.9em;
+  color: #555;
 }
