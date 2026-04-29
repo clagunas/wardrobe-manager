@@ -148,14 +148,12 @@ class OutfitBase(BaseModel):
     #     description="Additional comments about the outfit",
     #     example="Great for beach days",
     # )
-    # which lookbook?
-    # count number of times worn?
     # For when I can create the outfit image with the items
-    # image_filename: Optional[str] = Field(
-    #     None,
-    #     description="Filename of the outfit's image",
-    #     example="outfit.jpg",
-    # )
+    image_filename: Optional[str] = Field(
+        None,
+        description="Filename of the outfit's image",
+        example="outfit.png",
+    )
 
 
 # to be checked

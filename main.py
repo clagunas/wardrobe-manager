@@ -1,3 +1,6 @@
+from fileinput import filename
+import os
+
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
@@ -18,6 +21,7 @@ from bson import ObjectId
 from fastapi import UploadFile, File
 import shutil
 import uuid
+from image_utils import combine_images_square
 
 # from database_interface import get_items_collection
 from fastapi.staticfiles import StaticFiles
@@ -229,6 +233,34 @@ async def create_outfit(outfit: OutfitBase):
         raise HTTPException(status_code=400, detail="Outfit with the same items already exists")
     inserted = await outfit_collection.insert_one(outfit_dict)
     outfit_dict["id"] = str(inserted.inserted_id)
+
+    # create outfit pic 
+    # currently only works if all items have an image
+    object_ids = [ObjectId(i) for i in outfit_dict["items"]]
+    items = await collection.find({"_id": {"$in": object_ids}}).to_list(length=None)
+    img_paths = [item["image_filename"] for item in items if "image_filename" in item]
+
+    if len(items) != len(object_ids):
+        raise HTTPException(status_code=400, detail="Some items not found")
+
+    img_paths = []
+    for item in items:
+        if "image_filename" not in item:
+            raise HTTPException(status_code=400, detail="Item missing image")
+        img_paths.append(item["image_filename"])
+
+    result = combine_images_square(img_paths)
+
+    filename = f"{outfit_dict['id']}.png"
+    filepath = os.path.join("images/outfits/", filename)
+    result.save(filepath)
+
+    await outfit_collection.update_one(
+    {"_id": inserted.inserted_id},
+    {"$set": {"image_filename": filename}}
+    )
+    outfit_dict["image_filename"] = filename # for items it's only the filename too
+
     return outfit_dict
 
 
