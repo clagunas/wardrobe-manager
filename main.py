@@ -14,6 +14,8 @@ from models import (
     ClothingItemUpdate,
     OutfitBase,
     Outfit,
+    LookbookBase,
+    Lookbook,
     ALLOWED_CATEGORIES,
     ALLOWED_SEASONS
 )
@@ -39,8 +41,8 @@ client = AsyncIOMotorClient("mongodb://localhost:27017")
 db = client.wardrobe
 collection = db.items  # get_items_collection()
 outfit_collection = db.outfits
-lookbook_collection = db.lookbooks # future use
-calendar_collection = db.calendar # future use
+lookbook_collection = db.lookbooks
+calendar_collection = db.calendar
 
 
 def mongo_to_dict(item):
@@ -62,7 +64,7 @@ async def read_root():  # (collection: AsyncIOMotorCollection = Depends(get_item
     # }
     return RedirectResponse("/static/index.html")
 
-# HELPER FUNTIONS
+# HELPER FUNCTIONS
 
 @app.get("/allowed_values", tags=["Helper"])
 async def allowed_values():
@@ -162,6 +164,16 @@ async def create_clothing_item(item: ClothingItemBase):
     item_dict = item.model_dump()
     inserted = await collection.insert_one(item_dict)
     item_dict["id"] = str(inserted.inserted_id)
+
+    # add placeholder image if not given one
+    if item_dict['image_filename'] in {'', None}:
+        placeholder = f'placeholders/{item_dict['category'].lower()}.png'
+        item_dict['image_filename'] = placeholder
+        await collection.update_one(
+            {"_id": inserted.inserted_id},
+            {"$set": {"image_filename": placeholder}}
+        )
+
     return item_dict
 
 
@@ -208,6 +220,39 @@ async def modify_clothing_item(item_id: str, item: ClothingItemUpdate):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")
     updated_item = await collection.find_one({"_id": ObjectId(item_id)})
+
+    # if the pic is updated, find outfits and remake the outfit image
+    if 'image_filename' in item_dict:
+        outfits = []
+        async for outfit in outfit_collection.find({"items": item_id}):
+            outfit["_id"] = str(outfit["_id"])
+            outfits.append(outfit)
+        for outfit in outfits:
+            object_ids = [ObjectId(i) for i in outfit["items"]]
+            items = await collection.find({"_id": {"$in": object_ids}}).to_list(length=None)
+            img_paths = [item["image_filename"] for item in items if "image_filename" in item]
+
+            if len(items) != len(object_ids):
+                raise HTTPException(status_code=400, detail="Some items not found")
+
+            img_paths = []
+            for item in items:
+                if "image_filename" not in item:
+                    raise HTTPException(status_code=400, detail="Item missing image")
+                img_paths.append(item["image_filename"])
+
+            result = combine_images_square(img_paths)
+
+            filename = f"{outfit['_id']}.png"
+            filepath = os.path.join("images/outfits/", filename)
+            result.save(filepath)
+
+            await outfit_collection.update_one(
+                {"_id": ObjectId(outfit["_id"])},
+                {"$set": {"image_filename": filename}}
+            )
+        # blabla
+
     return mongo_to_dict(updated_item)
 
 # delete an item by id
@@ -320,3 +365,20 @@ async def delete_outfit(outfit_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Outfit not found")
     return None
+
+# LOOKBOOK ROUTES
+
+@app.get("/lookbooks", response_model=List[Lookbook], tags=["Lookbooks"])
+async def get_all_lookbooks():
+    """Get all lookbooks"""
+    lookbooks = await lookbook_collection.find({}).to_list(1000)
+    lookbooks = [mongo_to_dict(lookbook) for lookbook in lookbooks]
+    return lookbooks
+
+@app.post("/create_lookbook", response_model=Lookbook, status_code=201, tags=["Lookbooks"])
+async def create_lookbook(lookbook: LookbookBase):
+    """Create a new lookbook in the 'lookbooks' collection"""
+    lookbook_dict = lookbook.model_dump()
+    inserted = await lookbook_collection.insert_one(lookbook_dict)
+    lookbook_dict["id"] = str(inserted.inserted_id)
+    return lookbook_dict
