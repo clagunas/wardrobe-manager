@@ -36,15 +36,34 @@
     }
 
   </style>
-  
+
 </head>
 
 <body>
 
+<button id="items-button" class="action-button">
+  ITEMS
+</button>
+<button id="outfits-button" class="action-button">
+  OUTFITS
+</button>
+<button id="lookbook-button" class="action-button">
+  LOOKBOOKS
+</button>
+
 <h1>Clothing Items</h1>
 
-<button class="action-button">Create outfit</button>
-<button class="action-button">Create lookbook</button>
+<button id="create-item-button" class="action-button">
+  Create item
+</button>
+
+<button id="create-outfit-button" class="action-button">
+  Create outfit
+</button>
+
+<button id="create-lookbook-button" class="action-button">
+  Create lookbook
+</button>
 
 <div id="filters">
 
@@ -228,7 +247,21 @@ document.querySelectorAll("#filters input")
 
 /* ---------- initial load ---------- */
 
+document.getElementById("items-button").addEventListener("click", () => {
+    window.location.href = "items.html";
+});
+document.getElementById("outfits-button").addEventListener("click", () => {
+    window.location.href = "outfits.html";
+});
+// document.getElementById("lookbook-button").addEventListener("click", () => {
+//     window.location.href = "lookbooks.html";
+// });
+
 loadItems();
+
+document.getElementById("create-item-button").addEventListener("click", () => {
+    window.location.href = "add_item.html";
+});
 
 document.getElementById("create-outfit-button").addEventListener("click", () => {
     window.location.href = "create_outfit.html";

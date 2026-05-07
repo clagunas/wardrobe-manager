@@ -56,19 +56,16 @@ populateForm();
 
 <form id="add-item-form">
     <label>Name:</label><br>
-    <input type="text" name="name" required><br>
+    <input type="text" name="name"><br>
 
     <label>Category:</label><br>
-    <select name="category" required></select><br>
+    <select name="category"></select><br>
+
+    <label>Style:</label><br>
+    <input type="text" name="style"><br>
 
     <label>Season:</label><br>
     <select name="season"></select><br>
-
-    <label>Colors (comma separated):</label><br>
-    <input type="text" name="colors"><br>
-
-    <label>Styles (comma separated):</label><br>
-    <input type="text" name="styles"><br>
 
     <label>Brand:</label><br>
     <input type="text" name="brand"><br>
@@ -76,8 +73,20 @@ populateForm();
     <label>Price:</label><br>
     <input type="number" name="price" step="0.01"><br>
 
+    <label>Date Added:</label><br>
+    <input type="date" name="date_added"><br>
+
     <label>Second-hand:</label>
     <input type="checkbox" name="second_hand"><br>
+
+    <label>Place:</label><br>
+    <input type="text" name="place"><br>
+
+    <label>Colors (comma separated):</label><br>
+    <input type="text" name="colors"><br>
+
+    <label>Comment:</label><br>
+    <textarea name="comment"></textarea><br>
 
     <label>Image:</label><br>
     <input type="file" name="image"><br>
@@ -119,7 +128,10 @@ document.getElementById("add-item-form").addEventListener("submit", async (e) =>
 
     // Handle optional fields
     const colors = formData.get("colors") ? formData.get("colors").split(",").map(c => c.trim()) : [];
-    const styles = formData.get("styles") ? formData.get("styles").split(",").map(s => s.trim()) : [];
+    const styles = formData.get("style")
+    ? formData.get("style").split(",").map(s => s.trim())
+    : [];
+    // const styles = formData.get("styles") ? formData.get("styles").split(",").map(s => s.trim()) : [];
 
     // Handle image upload separately
     let image_filename = null;
@@ -146,7 +158,7 @@ document.getElementById("add-item-form").addEventListener("submit", async (e) =>
         category: formData.get("category"),
         season: formData.get("season") || null,
         colors: colors,
-        style: styles,
+        style: styles.length ? styles : null,
         brand: formData.get("brand") || null,
         price: formData.get("price") ? parseFloat(formData.get("price")) : null,
         second_hand: formData.get("second_hand") ? true : false,

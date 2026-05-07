@@ -152,7 +152,9 @@ async function loadItem() {
     document.querySelector("select[name='category']").value =
         item.category || ""
 
-    // style
+    
+    document.querySelector("select[name='style']").value =
+        item.style ? item.style.join(", ") : ""
 
     document.querySelector("select[name='season']").value =
         item.season || ""

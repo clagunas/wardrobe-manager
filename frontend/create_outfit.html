@@ -1,132 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
+
+
 <head>
-<meta charset="UTF-8">
-<title>Create Outfit</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  font-family: sans-serif;
-  padding: 20px;
-}
+  <title>Create Outfit</title>
+  <link rel="stylesheet" href="css/styles.css">
 
-h1 {
-  margin-bottom: 10px;
-}
+  <style>
+    
+    /* FILTER BAR */
 
-/* FILTER BAR */
+    #filters {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
 
-#filters {
-  margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
+    #filters label {
+      font-size: 0.9em;
+    }
 
-#filters label {
-  font-size: 0.9em;
-}
+    #filters select,
+    #filters input {
+      padding: 4px;
+    }
 
-#filters select,
-#filters input {
-  padding: 4px;
-}
+    /* GRID */
 
-/* GRID */
 
-#items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-}
+    #layout{
+      display:grid;
+      grid-template-columns: 1fr 260px;
+      gap:25px;
+    }
 
-#layout{
-  display:grid;
-  grid-template-columns: 1fr 260px;
-  gap:25px;
-}
+    #selected-panel{
+      border:1px solid #ddd;
+      border-radius:8px;
+      padding:12px;
+      background:white;
+      height:fit-content;
+      position:sticky;
+      top:20px;
+    }
 
-#selected-panel{
-  border:1px solid #ddd;
-  border-radius:8px;
-  padding:12px;
-  background:white;
-  height:fit-content;
-  position:sticky;
-  top:20px;
-}
+    #selected-items{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
 
-#selected-items{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  margin-top:10px;
-}
+    .selected-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid #eee;
+      border-radius:6px;
+      padding:6px;
+    }
 
-.selected-item{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  border:1px solid #eee;
-  border-radius:6px;
-  padding:6px;
-}
+    .selected-item img{
+      width:40px;
+      height:40px;
+      object-fit:contain;
+    }
 
-.selected-item img{
-  width:40px;
-  height:40px;
-  object-fit:contain;
-}
+    .remove-item{
+      margin-left:auto;
+      cursor:pointer;
+      color:red;
+      font-weight:bold;
+    }
 
-.remove-item{
-  margin-left:auto;
-  cursor:pointer;
-  color:red;
-  font-weight:bold;
-}
+    /* outfit form */
 
-/* CARD */
+    #outfit-form {
+      margin-bottom: 20px;
+    }
 
-.item-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  background: white;
-  text-align: center;
-}
-
-.item-card img {
-  width: 100%;
-  max-height: 200px;
-  object-fit: contain;
-  margin-bottom: 10px;
-}
-
-.item-name {
-  font-weight: bold;
-  margin-bottom: 6px;
-}
-
-.item-meta {
-  font-size: 0.9em;
-  color: #555;
-}
-
-/* outfit form */
-
-#outfit-form {
-  margin-bottom: 20px;
-}
-
-#create-outfit-button {
-  padding: 8px 16px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-}
-</style>
+  </style>
 </head>
 
 <body>
@@ -146,7 +104,9 @@ h1 {
 <option value="All-year">All-year</option>
 </select>
 
-<button id="create-outfit-button">Create Outfit</button>
+<button id="create-outfit-button" class="action-button">
+  Create Outfit
+</button>
 </div>
 
 <!-- SAME FILTERS AS IN ITEMS -->
@@ -185,7 +145,8 @@ Second-hand
 <div id="layout">
 
   <div id="items-section">
-      <div id="items-grid"></div>
+      <!-- <div id="items-grid"></div> -->
+      <div id="items-grid" class="grid-layout"></div>
   </div>
 
   <div id="selected-panel">
@@ -308,30 +269,26 @@ function renderItems(items) {
   items.forEach(item => {
 
     const card = document.createElement("div");
-    card.className = "item-card";
+    card.className = "card";
 
-    /* checkbox */
-
+    /* checkbox (overlay or top) */
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = item.id;
-
     checkbox.checked = selectedItems.has(item.id);
 
     checkbox.addEventListener("change", () => {
-
-      if (checkbox.checked)
+      if (checkbox.checked) {
         selectedItems.set(item.id, item);
-      else
+      } else {
         selectedItems.delete(item.id);
-        updateSelectedPanel();
-
+      }
+      updateSelectedPanel(); 
     });
 
     card.appendChild(checkbox);
 
     /* image */
-
     if (item.image_filename) {
       const img = document.createElement("img");
       img.src = `/images/${item.image_filename}`;
@@ -340,18 +297,20 @@ function renderItems(items) {
     }
 
     /* name */
-
     const nameDiv = document.createElement("div");
-    nameDiv.className = "item-name";
-    nameDiv.textContent = item.name;
+    nameDiv.className = "card-name";
 
+    const link = document.createElement("a");
+    link.href = `item.html?id=${encodeURIComponent(item.id)}`;
+    link.textContent = item.name;
+
+    nameDiv.appendChild(link);
     card.appendChild(nameDiv);
 
     /* metadata */
-
     ["colors", "season", "category"].forEach(field => {
       const meta = document.createElement("div");
-      meta.className = "item-meta";
+      meta.className = "card-meta";
       meta.textContent =
         `${field.charAt(0).toUpperCase() + field.slice(1)}: ` +
         formatField(item[field], field);
@@ -359,9 +318,7 @@ function renderItems(items) {
     });
 
     grid.appendChild(card);
-
   });
-
 }
 
 /* ---------- fetch items ---------- */

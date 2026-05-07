@@ -1,74 +1,229 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Clothing Item Details</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        img { max-width: 300px; display: block; margin-bottom: 20px; }
-        .field { margin-bottom: 10px; }
-        .field span { font-weight: bold; }
-        
-        #back-button {
-            margin-bottom: 20px;
-            padding: 8px 16px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            background: white;
-            cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clothing Item Card</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 30px;
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        color: #222;
+    }
+
+    .top-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+
+    button:hover {
+        transform: translateY(-1px);
+    }
+
+    #back-button {
+        background: white;
+        border: 1px solid #ddd;
+    }
+
+    #edit-button {
+        background: #222;
+        color: white;
+    }
+
+    #delete-item-button {
+        background: #c62828;
+        color: white;
+    }
+
+    .item-card {
+        width: 100%;
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+    }
+
+    .image-box {
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        border-radius: 18px;
+        background: #eee;
+        overflow: hidden;
+        border: 2px solid #e5e5e5;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0px;
+    }
+
+    .image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #f5f5f5;
+    }
+
+    .placeholder {
+        color: #999;
+        font-size: 18px;
+    }
+
+    .details {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .field-label {
+        font-size: 13px;
+        color: #777;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .field-value {
+        min-height: 42px;
+        border: 2px solid #e5e5e5;
+        border-radius: 12px;
+        padding: 10px 14px;
+        background: #fafafa;
+
+        display: flex;
+        align-items: center;
+    }
+
+    .two-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .comment-box {
+        min-height: 140px;
+        align-items: flex-start;
+        white-space: pre-wrap;
+    }
+
+    .appearances {
+        margin-top: 30px;
+        max-width: 900px;
+        margin-inline: auto;
+        background: white;
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    ul {
+        margin-top: 8px;
+    }
+
+    @media (max-width: 760px) {
+        .item-card {
+            grid-template-columns: 1fr;
         }
 
-        #back-button:hover {
-            background: #f9f9f9;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        .two-columns {
+            grid-template-columns: 1fr;
         }
-        #edit-button {
-            margin-bottom: 20px;
-            padding: 8px 16px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            background: white;
-            cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-
-        #edit-button:hover {
-            background: #f9f9f9;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-    </style>
+    }
+</style>
 </head>
+
 <body>
 
-<button id="back-button">← Back to Items</button>
-<button id="edit-button">✎ Edit Item</button>
-<h2>Clothing Item Details</h2>
+<div class="top-buttons">
+    <button id="back-button">← Back</button>
+    <button id="edit-button">✎ Edit</button>
+    <button id="delete-item-button">Delete</button>
+</div>
 
 <div id="item-details">
     Loading...
 </div>
 
-<h3>Appearances</h3>
-<div id="appearances">
-    Loading appearances...
+<div class="appearances">
+    <h2>Appearances</h2>
+    <div id="appearances">Loading appearances...</div>
 </div>
 
 <script>
 
+const params = new URLSearchParams(window.location.search);
+const itemId = params.get("id");
+
+function safeValue(value) {
+    if (value === undefined || value === null || value === "") {
+        return "&nbsp;";
+    }
+
+    if (Array.isArray(value)) {
+        return value.length ? value.join(", ") : "&nbsp;";
+    }
+
+    return value;
+}
+
+function createField(label, value, extraClass = "") {
+    return `
+        <div class="field">
+            <div class="field-label">${label}</div>
+            <div class="field-value ${extraClass}">
+                ${safeValue(value)}
+            </div>
+        </div>
+    `;
+}
+
 async function loadAppearances(itemId) {
+
     const container = document.getElementById("appearances");
 
     try {
+
         const resp = await fetch(`/item_appearances/${itemId}`);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+        }
 
         const data = await resp.json();
 
         let html = "";
 
-        // Outfits
-        html += "<h4>Outfits</h4>";
+        html += `<h3>Outfits</h3>`;
+
         if (data.outfits.length === 0) {
             html += "<p>None</p>";
         } else {
@@ -79,8 +234,8 @@ async function loadAppearances(itemId) {
             html += "</ul>";
         }
 
-        // Lookbooks
-        html += "<h4>Lookbooks</h4>";
+        html += `<h3>Lookbooks</h3>`;
+
         if (data.lookbooks.length === 0) {
             html += "<p>None</p>";
         } else {
@@ -91,75 +246,177 @@ async function loadAppearances(itemId) {
             html += "</ul>";
         }
 
-        // How many days
-        html += `<div><span>Times worn:</span> ${data.days}</div>`;
+        html += `<p><strong>Times worn:</strong> ${data.days}</p>`;
 
         container.innerHTML = html;
 
     } catch (err) {
+
         container.textContent = `Failed to load appearances: ${err}`;
+
     }
 }
 
-
 async function loadItem() {
-    // Get item_id from query string, e.g., ?id=abc123
-    const params = new URLSearchParams(window.location.search);
-    const itemId = params.get("id");
+
     if (!itemId) {
-        document.getElementById("item-details").textContent = "No item ID provided.";
+        document.getElementById("item-details").textContent =
+            "No item ID provided.";
         return;
     }
 
     try {
+
         const resp = await fetch(`/items/${itemId}`);
+
         if (!resp.ok) {
             throw new Error(`Item not found: ${resp.status}`);
         }
+
         const item = await resp.json();
 
-        // Build HTML
-        let html = "";
+        let imageHTML = `
+            <div class="placeholder">No Image</div>
+        `;
 
         if (item.image_filename) {
-            html += `<img src="/images/${item.image_filename}" alt="${item.name}">`;
+            imageHTML = `
+                <img
+                    src="/images/${item.image_filename}"
+                    alt="${item.name || "Clothing item"}"
+                >
+            `;
         }
 
-        html += `<div class="field"><span>Name:</span> ${item.name}</div>`;
-        html += `<div class="field"><span>Category:</span> ${item.category}</div>`;
-        html += `<div class="field"><span>Style:</span> ${item.style.join(", ")}</div>`;
-        if (item.season) html += `<div class="field"><span>Season:</span> ${item.season}</div>`;
-        if (item.brand) html += `<div class="field"><span>Brand:</span> ${item.brand}</div>`;
-        if (item.price) html += `<div class="field"><span>Price:</span> €${item.price.toFixed(2)}</div>`;
-        if (item.date_added) html += `<div class="field"><span>Date added:</span> ${new Date(item.date_added).toLocaleDateString()}</div>`;
-        if (item.second_hand !== undefined) html += `<div class="field"><span>Second-hand:</span> ${item.second_hand ? "Yes" : "No"}</div>`;
-        if (item.place) html += `<div class="field"><span>Place:</span> ${item.place}</div>`;
-        html += `<div class="field"><span>Colors:</span> ${item.colors.join(", ")}</div>`;
-        if (item.comment) html += `<div class="field"><span>Comment:</span> ${item.comment}</div>`;
+        const html = `
+            <div class="item-card">
+
+                <div class="image-box">
+                    ${imageHTML}
+                </div>
+
+                <div class="details">
+
+                    ${createField("Name", item.name)}
+
+                    <div class="two-columns">
+                        ${createField("Category", item.category)}
+                        ${createField("Style", item.style)}
+                    </div>
+
+                    <div class="two-columns">
+                        ${createField("Color", item.colors)}
+                        ${createField("Season", item.season)}
+                    </div>
+
+                    <div class="two-columns">
+                        ${createField("Brand", item.brand)}
+                        ${createField(
+                            "Second Hand",
+                            item.second_hand === undefined
+                                ? ""
+                                : item.second_hand ? "Yes" : "No"
+                        )}
+                    </div>
+
+                    <div class="two-columns">
+                        ${createField(
+                            "Price",
+                            item.price
+                                ? `€${Number(item.price).toFixed(2)}`
+                                : ""
+                        )}
+
+                        ${createField(
+                            "Date",
+                            item.date_added
+                                ? new Date(item.date_added)
+                                    .toLocaleDateString()
+                                : ""
+                        )}
+                    </div>
+
+                    ${createField("Place", item.place)}
+
+                    ${createField(
+                        "Comment",
+                        item.comment,
+                        "comment-box"
+                    )}
+
+                </div>
+
+            </div>
+        `;
 
         document.getElementById("item-details").innerHTML = html;
 
         loadAppearances(itemId);
 
     } catch (err) {
-        document.getElementById("item-details").textContent = `Error loading item: ${err}`;
+
+        document.getElementById("item-details").textContent =
+            `Error loading item: ${err}`;
+
     }
 }
 
 loadItem();
+
 document.getElementById("back-button").addEventListener("click", () => {
     window.location.href = "items.html";
 });
+
 document.getElementById("edit-button").addEventListener("click", () => {
-    const params = new URLSearchParams(window.location.search);
-    const itemId = params.get("id");
+
     if (itemId) {
-        window.location.href = `edit_item.html?id=${encodeURIComponent(itemId)}`;
+        window.location.href =
+            `edit_item.html?id=${encodeURIComponent(itemId)}`;
     } else {
-        alert("No item ID found for editing.");
+        alert("No item ID found.");
     }
 });
 
+document.getElementById("delete-item-button").addEventListener("click", async () => {
+
+    if (!itemId) {
+        alert("No item ID found.");
+        return;
+    }
+
+    const confirmDelete =
+        confirm("Are you sure you want to delete this item?");
+
+    if (!confirmDelete) return;
+
+    try {
+
+        const response = await fetch(`/delete_item/${itemId}`, {
+            method: "DELETE"
+        });
+
+        if (response.status === 204) {
+
+            alert("Item deleted successfully");
+
+            window.location.href = "items.html";
+
+            return;
+        }
+
+        const error = await response.json();
+
+        alert("Error: " + JSON.stringify(error));
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert("Server error");
+
+    }
+
+});
 </script>
 
 </body>
