@@ -15,15 +15,6 @@ class Category(str, Enum):
 
 
 ALLOWED_CATEGORIES = [c.value for c in Category]
-# [
-#     "Top",
-#     "Pants",
-#     "Outerwear",
-#     "Shoes",
-#     "Accessories",
-#     "Dresses",
-#     "Bag",
-# ]
 
 ALLOWED_SEASONS = ["Spring/Fall", "Summer", "Winter", "All-year"]
 
@@ -36,8 +27,8 @@ class ClothingItemBase(BaseModel):
     category: Category = Field(
         ..., description="Category (e.g., pants, shirt, shoes)", example="Pants"
     )
-    style: List[str] = Field(
-        default_factory=list,
+    style: Optional[List[str]] = Field(
+        None,
         description="Style tags",
         example=["long sleeve", "sport"],
     )
@@ -97,17 +88,20 @@ class ClothingItemUpdate(BaseModel):
     name: Optional[str] = Field(
         None, description="Name of the clothing item", example="Blue Jeans"
     )
-    category: Optional[List[Category]] = Field(
+    category: Optional[Category] = Field(
         None, description="Category (e.g., pants, shirt, shoes)", example="Pants"
     )
     brand: Optional[str] = Field(None, description="Brand name", example="Levi's")
+    style: Optional[List[str]] = Field(
+        None, description="Style tags", example=["long sleeve", "sport"]
+    )
     colors: Optional[List[str]] = Field(
         None, description="List of colors", example=["blue", "black"]
     )
     second_hand: Optional[bool] = Field(
         None, description="Whether the item is second-hand", example=True
     )
-    season: Optional[List[Literal["Spring/Fall", "Summer", "Winter", "All-year"]]] = (
+    season: Optional[Literal["Spring/Fall", "Summer", "Winter", "All-year"]] = (
         Field(None, description="Season", example="Summer")
     )
     price: Optional[float] = Field(None, description="Price in euros", example=79.99)
@@ -127,7 +121,6 @@ class ClothingItemUpdate(BaseModel):
     )
 
 
-# to be checked
 class OutfitBase(BaseModel):
     name: str = Field(
         ..., description="Name of the outfit", example="Casual Summer Look"
@@ -156,20 +149,19 @@ class OutfitBase(BaseModel):
     )
 
 
-# to be checked
 class Outfit(OutfitBase):
     id: str = Field(..., description="Unique identifier for the outfit")
 
 
 class LookbookBase(BaseModel):
     name: str = Field(..., description="Name of the lookbook", example="Summer Holiday")
-    outfits: List[str] = Field(
-        ...,
+    outfits: Optional[List[str]] = Field(
+        None,
         description="List of outfit IDs included in the lookbook",
         example=["outfit_id1", "outfit_id2"],
     )
-    items: List[str] = Field(
-        ...,
+    items: Optional[List[str]] = Field(
+        None,
         description="List of clothing item IDs included in the lookbook",
         example=["item_id1", "item_id2"],
     )
@@ -188,3 +180,17 @@ class LookbookBase(BaseModel):
 
 class Lookbook(LookbookBase):
     id: str = Field(..., description="Unique identifier for the lookbook")
+
+
+class CalendarEntryBase(BaseModel):
+    outfit_id: str = Field(..., description="ID of the outfit to wear")
+    date: datetime = Field(..., description="Date of outfit", example="2023-09-01")
+    comment: Optional[str] = Field(
+        None,
+        description="Additional comments about the calendar entry",
+        example="Trip",
+    )
+
+
+class CalendarEntry(CalendarEntryBase):
+    id: str = Field(..., description="Unique identifier for the calendar entry")
