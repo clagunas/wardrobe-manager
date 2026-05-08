@@ -1,184 +1,427 @@
-<!-- <form id="add-item-form">
-    <label>Category:</label>
-    <select name="category" required></select><br><br>
-
-    <label>Season:</label>
-    <select name="season"></select><br><br>
-
-    <label>Colors:</label>
-    <input type="text" name="colors" placeholder="Comma-separated"><br><br>
-
-    <button type="submit">Add Item</button>
-</form>
-
-<script>
-async function populateForm() {
-    const resp = await fetch("/allowed_values");
-    const data = await resp.json();
-
-    // Populate categories
-    const categorySelect = document.querySelector("select[name='category']");
-    data.categories.forEach(c => {
-        const option = document.createElement("option");
-        option.value = c;
-        option.textContent = c;
-        categorySelect.appendChild(option);
-    });
-
-    // Populate seasons
-    const seasonSelect = document.querySelector("select[name='season']");
-    data.seasons.forEach(s => {
-        const option = document.createElement("option");
-        option.value = s;
-        option.textContent = s;
-        seasonSelect.appendChild(option);
-    });
-}
-
-populateForm();
-</script> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Add Clothing Item</title>
+
+    <link rel="stylesheet" href="css/individual_item.css">
+
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        label { font-weight: bold; }
-        .filter-group label { margin-right: 10px; }
-        input, select, button { margin-top: 5px; margin-bottom: 15px; }
+
+        form {
+            width: 100%;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .upload-box {
+            cursor: pointer;
+        }
+
+        .upload-box input[type="file"] {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .submit-row {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        #save-button {
+            background: #222;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+        }
+
+        .page-title {
+            max-width: 900px;
+            margin: auto;
+            margin-bottom: 20px;
+        }
+
     </style>
 </head>
+
 <body>
 
-<h2>Add New Clothing Item</h2>
+<div class="page-title">
+    <h1>Add Clothing Item</h1>
+</div>
 
 <form id="add-item-form">
-    <label>Name:</label><br>
-    <input type="text" name="name"><br>
 
-    <label>Category:</label><br>
-    <select name="category"></select><br>
+    <div class="item-card">
 
-    <label>Style:</label><br>
-    <input type="text" name="style"><br>
+        <!-- LEFT SIDE -->
+        <div class="image-box upload-box">
 
-    <label>Season:</label><br>
-    <select name="season"></select><br>
+            <input type="file" name="image" accept="image/*">
 
-    <label>Brand:</label><br>
-    <input type="text" name="brand"><br>
+        </div>
 
-    <label>Price:</label><br>
-    <input type="number" name="price" step="0.01"><br>
+        <!-- RIGHT SIDE -->
+        <div class="details">
 
-    <label>Date Added:</label><br>
-    <input type="date" name="date_added"><br>
+            <!-- NAME -->
+            <div class="field">
+                <div class="field-label">Name</div>
 
-    <label>Second-hand:</label>
-    <input type="checkbox" name="second_hand"><br>
+                <div class="field-value">
+                    <input type="text" name="name">
+                </div>
+            </div>
 
-    <label>Place:</label><br>
-    <input type="text" name="place"><br>
+            <!-- CATEGORY + STYLE -->
+            <div class="two-columns">
 
-    <label>Colors (comma separated):</label><br>
-    <input type="text" name="colors"><br>
+                <div class="field">
+                    <div class="field-label">Category</div>
 
-    <label>Comment:</label><br>
-    <textarea name="comment"></textarea><br>
+                    <div class="field-value">
+                        <select name="category"></select>
+                    </div>
+                </div>
 
-    <label>Image:</label><br>
-    <input type="file" name="image"><br>
+                <div class="field">
+                    <div class="field-label">Style</div>
 
-    <button type="submit">Add Item</button>
+                    <div class="field-value">
+                        <input
+                            type="text"
+                            name="style"
+                            placeholder="casual, vintage..."
+                        >
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLORS + SEASON -->
+            <div class="two-columns">
+
+                <div class="field">
+                    <div class="field-label">Colors</div>
+
+                    <div class="field-value">
+                        <input
+                            type="text"
+                            name="colors"
+                            placeholder="black, white..."
+                        >
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">Season</div>
+
+                    <div class="field-value">
+                        <select name="season"></select>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BRAND + SECOND HAND -->
+            <div class="two-columns">
+
+                <div class="field">
+                    <div class="field-label">Brand</div>
+
+                    <div class="field-value">
+                        <input type="text" name="brand">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">Second Hand</div>
+
+                    <div class="field-value">
+                        <input
+                            type="checkbox"
+                            name="second_hand"
+                            style="width:auto;"
+                        >
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PRICE + DATE -->
+            <div class="two-columns">
+
+                <div class="field">
+                    <div class="field-label">Price</div>
+
+                    <div class="field-value">
+                        <input
+                            type="number"
+                            name="price"
+                            step="0.01"
+                        >
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-label">Date Added</div>
+
+                    <div class="field-value">
+                        <input type="date" name="date_added">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PLACE -->
+            <div class="field">
+                <div class="field-label">Place</div>
+
+                <div class="field-value">
+                    <input type="text" name="place">
+                </div>
+            </div>
+
+            <!-- COMMENT -->
+            <div class="field">
+
+                <div class="field-label">Comment</div>
+
+                <div class="field-value comment-box">
+
+                    <textarea
+                        name="comment"
+                        placeholder="Notes..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="submit-row">
+        <button type="submit" id="save-button">
+            Add Item
+        </button>
+    </div>
+
 </form>
 
 <script>
+
 async function populateForm() {
-    // Fetch allowed values from backend
+
     const resp = await fetch("/allowed_values");
+
     const data = await resp.json();
 
-    const categorySelect = document.querySelector("select[name='category']");
+    const categorySelect =
+        document.querySelector("select[name='category']");
+
+    const emptyCategory =
+        document.createElement("option");
+
+    emptyCategory.value = "";
+    emptyCategory.textContent = "";
+
+    categorySelect.appendChild(emptyCategory);
+
     data.categories.forEach(c => {
-        const option = document.createElement("option");
+
+        const option =
+            document.createElement("option");
+
         option.value = c;
         option.textContent = c;
+
         categorySelect.appendChild(option);
+
     });
 
-    const seasonSelect = document.querySelector("select[name='season']");
+    const seasonSelect =
+        document.querySelector("select[name='season']");
+
+    const emptySeason =
+        document.createElement("option");
+
+    emptySeason.value = "";
+    emptySeason.textContent = "";
+
+    seasonSelect.appendChild(emptySeason);
+
     data.seasons.forEach(s => {
-        const option = document.createElement("option");
+
+        const option =
+            document.createElement("option");
+
         option.value = s;
         option.textContent = s;
+
         seasonSelect.appendChild(option);
+
     });
+
 }
 
 populateForm();
 
-// Handle form submission
-document.getElementById("add-item-form").addEventListener("submit", async (e) => {
+document.getElementById("add-item-form")
+.addEventListener("submit", async (e) => {
+
     e.preventDefault();
 
     const form = e.target;
+
     const formData = new FormData(form);
 
-    // Handle optional fields
-    const colors = formData.get("colors") ? formData.get("colors").split(",").map(c => c.trim()) : [];
-    const styles = formData.get("style")
-    ? formData.get("style").split(",").map(s => s.trim())
-    : [];
-    // const styles = formData.get("styles") ? formData.get("styles").split(",").map(s => s.trim()) : [];
+    const colors =
+        formData.get("colors")
+            ? formData.get("colors")
+                .split(",")
+                .map(c => c.trim())
+            : [];
 
-    // Handle image upload separately
+    const styles =
+        formData.get("style")
+            ? formData.get("style")
+                .split(",")
+                .map(s => s.trim())
+            : [];
+
     let image_filename = null;
-    if (formData.get("image") && formData.get("image").size > 0) {
-        const imageData = new FormData();
-        imageData.append("file", formData.get("image"));
 
-        const uploadResp = await fetch("/upload_image", { // create this endpoint
-            method: "POST",
-            body: imageData
-        });
+    if (
+        formData.get("image")
+        && formData.get("image").size > 0
+    ) {
+
+        const imageData = new FormData();
+
+        imageData.append(
+            "file",
+            formData.get("image")
+        );
+
+        const uploadResp =
+            await fetch("/upload_image", {
+                method: "POST",
+                body: imageData
+            });
+
         if (uploadResp.ok) {
-            const uploadData = await uploadResp.json();
-            image_filename = uploadData.filename;
+
+            const uploadData =
+                await uploadResp.json();
+
+            image_filename =
+                uploadData.filename;
+
         } else {
+
             alert("Image upload failed");
+
             return;
         }
     }
 
-    // Prepare JSON payload for your API
     const payload = {
+
         name: formData.get("name"),
+
         category: formData.get("category"),
-        season: formData.get("season") || null,
+
+        season:
+            formData.get("season") || null,
+
         colors: colors,
-        style: styles.length ? styles : null,
-        brand: formData.get("brand") || null,
-        price: formData.get("price") ? parseFloat(formData.get("price")) : null,
-        second_hand: formData.get("second_hand") ? true : false,
-        image_filename: image_filename
+
+        style:
+            styles.length
+                ? styles
+                : null,
+
+        brand:
+            formData.get("brand") || null,
+
+        price:
+            formData.get("price")
+                ? parseFloat(formData.get("price"))
+                : null,
+
+        second_hand:
+            formData.get("second_hand")
+                ? true
+                : false,
+
+        place:
+            formData.get("place") || null,
+
+        comment:
+            formData.get("comment") || null,
+
+        date_added:
+            formData.get("date_added") || null,
+
+        image_filename:
+            image_filename
+
     };
 
-    const response = await fetch("/create_clothing_item", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+    const response =
+        await fetch("/create_clothing_item", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(payload)
+
+        });
 
     if (response.ok) {
-        const newItem = await response.json();
+
+        const newItem =
+            await response.json();
+
         alert(`Created item: ${newItem.name}`);
+
         form.reset();
+
     } else {
-        const error = await response.json();
-        alert("Error: " + JSON.stringify(error));
+
+        const error =
+            await response.json();
+
+        alert(
+            "Error: "
+            + JSON.stringify(error)
+        );
+
     }
+
 });
 </script>
 

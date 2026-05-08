@@ -1,0 +1,152 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 30px;
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    color: #222;
+}
+
+.top-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+#back-button {
+    background: white;
+    border: 1px solid #ddd;
+}
+
+#edit-button {
+    background: #222;
+    color: white;
+}
+
+#delete-item-button {
+    background: #c62828;
+    color: white;
+}
+
+.item-card {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+}
+
+.image-box {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 18px;
+    background: #eee;
+    overflow: hidden;
+    border: 2px solid #e5e5e5;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0px;
+}
+
+.image-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #f5f5f5;
+}
+
+.placeholder {
+    color: #999;
+    font-size: 18px;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 13px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.field-value {
+    min-height: 42px;
+    border: 2px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 10px 14px;
+    background: #fafafa;
+
+    display: flex;
+    align-items: center;
+}
+
+.two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.comment-box {
+    min-height: 140px;
+    align-items: flex-start;
+    white-space: pre-wrap;
+}
+
+.appearances {
+    margin-top: 30px;
+    max-width: 900px;
+    margin-inline: auto;
+    background: white;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+ul {
+    margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+    .item-card {
+        grid-template-columns: 1fr;
+    }
+
+    .two-columns {
+        grid-template-columns: 1fr;
+    }
+}
