@@ -16,6 +16,8 @@ from models import (
     Outfit,
     LookbookBase,
     Lookbook,
+    CalendarEntryBase,
+    CalendarEntry,
     ALLOWED_CATEGORIES,
     ALLOWED_SEASONS
 )
@@ -382,3 +384,110 @@ async def create_lookbook(lookbook: LookbookBase):
     inserted = await lookbook_collection.insert_one(lookbook_dict)
     lookbook_dict["id"] = str(inserted.inserted_id)
     return lookbook_dict
+
+@app.get("/lookbooks/{lookbook_id}", response_model=Lookbook, tags=["Lookbooks"])
+async def get_lookbook(lookbook_id: str):
+    """Get a specific lookbook by ID"""
+    lookbook = await lookbook_collection.find_one({"_id": ObjectId(lookbook_id)})
+    if not lookbook:
+        raise HTTPException(status_code=404, detail="Lookbook not found")
+    return mongo_to_dict(lookbook)
+
+@app.delete("/delete_lookbook/{lookbook_id}", status_code=204, tags=["Lookbooks"])
+async def delete_lookbook(lookbook_id: str):
+    """Delete a lookbook by ID"""
+    result = await lookbook_collection.delete_one({"_id": ObjectId(lookbook_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lookbook not found")
+    return None
+
+# is this what I want? 
+@app.patch("/modify_lookbook/{lookbook_id}", response_model=Lookbook, tags=["Lookbooks"])
+async def modify_lookbook(lookbook_id: str, lookbook: LookbookBase):
+    """Modify an existing lookbook by ID"""
+    lookbook_dict = lookbook.model_dump(exclude_unset=True)
+    if not lookbook_dict:
+        raise HTTPException(status_code=400, detail="No fields provided")
+    result = await lookbook_collection.update_one(
+        {"_id": ObjectId(lookbook_id)}, {"$set": lookbook_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lookbook not found")
+    updated_lookbook = await lookbook_collection.find_one({"_id": ObjectId(lookbook_id)})
+    return mongo_to_dict(updated_lookbook)
+
+@app.post("/add_outfit_to_lookbook/{lookbook_id}", response_model=Lookbook, tags=["Lookbooks"])
+async def add_outfit_to_lookbook(lookbook_id: str, outfit_id: str):
+    """Add an outfit to a lookbook by ID"""
+
+    result = await lookbook_collection.update_one(
+        {"_id": ObjectId(lookbook_id)},
+        {"$addToSet": {"outfits": outfit_id}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lookbook not found")
+
+    updated_lookbook = await lookbook_collection.find_one(
+        {"_id": ObjectId(lookbook_id)}
+    )
+
+    return mongo_to_dict(updated_lookbook)
+
+@app.post("/add_item_to_lookbook/{lookbook_id}", response_model=Lookbook, tags=["Lookbooks"])
+async def add_item_to_lookbook(lookbook_id: str, item_id: str):
+    """Add a clothing item to a lookbook by ID"""
+
+    result = await lookbook_collection.update_one(
+        {"_id": ObjectId(lookbook_id)},
+        {"$addToSet": {"items": item_id}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lookbook not found")
+
+    updated_lookbook = await lookbook_collection.find_one(
+        {"_id": ObjectId(lookbook_id)}
+    )
+
+    return mongo_to_dict(updated_lookbook)
+
+
+# CALENDAR ROUTES
+# hmm
+@app.get("/calendar", response_model=List[CalendarEntry], tags=["Calendar"])
+async def get_calendar():
+    """Get all calendar entries"""
+    calendar_entries = await calendar_collection.find({}).to_list(1000)
+    calendar_entries = [mongo_to_dict(entry) for entry in calendar_entries]
+    return calendar_entries
+
+@app.post("/create_calendar_entry", response_model=CalendarEntry, status_code=201, tags=["Calendar"])
+async def create_calendar_entry(entry: CalendarEntryBase):
+    """Create a new calendar entry in the 'calendar' collection"""
+    entry_dict = entry.model_dump()
+    inserted = await calendar_collection.insert_one(entry_dict)
+    entry_dict["id"] = str(inserted.inserted_id)
+    return entry_dict
+
+@app.delete("/delete_calendar_entry/{entry_id}", status_code=204, tags=["Calendar"])
+async def delete_calendar_entry(entry_id: str):
+    """Delete a calendar entry by ID"""
+    result = await calendar_collection.delete_one({"_id": ObjectId(entry_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Calendar entry not found")
+    return None
+
+@app.patch("/modify_calendar_entry/{entry_id}", response_model=CalendarEntry, tags=["Calendar"])
+async def modify_calendar_entry(entry_id: str, entry: CalendarEntryBase):
+    """Modify an existing calendar entry by ID"""
+    entry_dict = entry.model_dump(exclude_unset=True)
+    if not entry_dict:
+        raise HTTPException(status_code=400, detail="No fields provided")
+    result = await calendar_collection.update_one(
+        {"_id": ObjectId(entry_id)}, {"$set": entry_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Calendar entry not found")
+    updated_entry = await calendar_collection.find_one({"_id": ObjectId(entry_id)})
+    return mongo_to_dict(updated_entry)
