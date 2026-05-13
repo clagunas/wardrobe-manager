@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Lookbook</title>
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <style>
+    .section-title {
+      margin-top: 40px;
+      margin-bottom: 16px;
+    }
+
+    .lookbook-header {
+      margin-bottom: 30px;
+    }
+
+    .lookbook-meta {
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .empty-state {
+      color: #777;
+      font-style: italic;
+    }
+
+    .section-divider {
+      margin-top: 40px;
+      margin-bottom: 20px;
+      border: none;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVIGATION -->
+
+  <button id="items-button" class="action-button">
+    ITEMS
+  </button>
+
+  <button id="outfits-button" class="action-button">
+    OUTFITS
+  </button>
+
+  <button id="lookbook-button" class="action-button">
+    LOOKBOOKS
+  </button>
+
+  <!-- PAGE TITLE -->
+
+  <h1 id="lookbook-title">Lookbook</h1>
+
+  <!-- LOOKBOOK INFO -->
+
+  <div class="lookbook-header">
+
+    <div id="lookbook-location" class="lookbook-meta"></div>
+
+    <div id="lookbook-comment" class="lookbook-meta"></div>
+
+  </div>
+
+  <!-- OUTFITS -->
+
+  <h2 class="section-title">Outfits</h2>
+
+  <div id="outfits-grid" class="grid-layout"></div>
+
+  <!-- ITEMS -->
+
+  <hr class="section-divider" />
+
+  <h2 class="section-title">Items</h2>
+
+  <div id="items-grid" class="grid-layout"></div>
+
+  <script>
+
+    const API_BASE = "http://127.0.0.1:8000";
+
+    /* ---------- get lookbook id from URL ---------- */
+
+    const params = new URLSearchParams(window.location.search);
+    const lookbookId = params.get("id");
+
+    if (!lookbookId) {
+      alert("Missing lookbook ID");
+      throw new Error("Missing lookbook ID");
+    }
+
+    /* ---------- render outfits ---------- */
+
+    function renderOutfits(outfits) {
+
+      const grid = document.getElementById("outfits-grid");
+      grid.innerHTML = "";
+
+      if (!outfits || outfits.length === 0) {
+        grid.innerHTML = "<div class='empty-state'>No outfits in this lookbook.</div>";
+        return;
+      }
+
+      outfits.forEach(outfit => {
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        /* IMAGE */
+
+        if (outfit.image_filename) {
+
+          const img = document.createElement("img");
+
+          img.src = `/images/outfits/${outfit.image_filename}`;
+          img.alt = outfit.name || "";
+
+          card.appendChild(img);
+        }
+
+        /* NAME */
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "card-name";
+
+        const link = document.createElement("a");
+
+        link.href = `outfit.html?id=${encodeURIComponent(outfit.id)}`;
+        link.textContent = outfit.name || "Unnamed Outfit";
+
+        nameDiv.appendChild(link);
+
+        card.appendChild(nameDiv);
+
+        /* META */
+
+        if (outfit.items_data) {
+
+          const meta = document.createElement("div");
+          meta.className = "card-meta";
+
+          meta.textContent = `${outfit.items_data.length} items`;
+
+          card.appendChild(meta);
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    /* ---------- render items ---------- */
+
+    function renderItems(items) {
+
+      const grid = document.getElementById("items-grid");
+      grid.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        grid.innerHTML = "<div class='empty-state'>No items in this lookbook.</div>";
+        return;
+      }
+
+      items.forEach(item => {
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        /* IMAGE */
+
+        if (item.image_filename) {
+
+          const img = document.createElement("img");
+
+          img.src = `/images/${item.image_filename}`;
+          img.alt = item.name || "";
+
+          card.appendChild(img);
+        }
+
+        /* NAME */
+
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "card-name";
+
+        const link = document.createElement("a");
+
+        link.href = `item.html?id=${encodeURIComponent(item.id)}`;
+        link.textContent = item.name || "Unnamed Item";
+
+        nameDiv.appendChild(link);
+
+        card.appendChild(nameDiv);
+
+        /* META */
+
+        const metaParts = [];
+
+        if (item.category) {
+          metaParts.push(item.category);
+        }
+
+        if (item.color) {
+          metaParts.push(item.color);
+        }
+
+        if (metaParts.length > 0) {
+
+          const meta = document.createElement("div");
+          meta.className = "card-meta";
+
+          meta.textContent = metaParts.join(" • ");
+
+          card.appendChild(meta);
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    /* ---------- load lookbook ---------- */
+
+    async function loadLookbook() {
+
+      try {
+
+        const response = await fetch(`${API_BASE}/lookbooks/${lookbookId}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch lookbook");
+        }
+
+        const lookbook = await response.json();
+
+        /* TITLE */
+
+        document.getElementById("lookbook-title").textContent =
+          lookbook.name || "Lookbook";
+
+        /* LOCATION */
+
+        if (lookbook.location) {
+          document.getElementById("lookbook-location").textContent =
+            `Location: ${lookbook.location}`;
+        }
+
+        /* COMMENT */
+
+        if (lookbook.comment) {
+          document.getElementById("lookbook-comment").textContent =
+            lookbook.comment;
+        }
+
+        /* LOAD OUTFITS */
+
+        let outfits = [];
+
+        if (lookbook.outfits && lookbook.outfits.length > 0) {
+
+          const outfitResponses = await Promise.all(
+            lookbook.outfits.map(id =>
+              fetch(`${API_BASE}/outfits/${id}`)
+            )
+          );
+
+          outfits = await Promise.all(
+            outfitResponses.map(r => r.json())
+          );
+        }
+
+        renderOutfits(outfits);
+
+        /* LOAD ITEMS */
+
+        let items = [];
+
+        if (lookbook.items && lookbook.items.length > 0) {
+
+          const itemResponses = await Promise.all(
+            lookbook.items.map(id =>
+              fetch(`${API_BASE}/items/${id}`)
+            )
+          );
+
+          items = await Promise.all(
+            itemResponses.map(r => r.json())
+          );
+        }
+
+        renderItems(items);
+
+      } catch (err) {
+
+        console.error(err);
+
+        document.body.innerHTML += `
+          <div class="empty-state">
+            Failed to load lookbook.
+          </div>
+        `;
+      }
+    }
+
+    /* ---------- initial load ---------- */
+
+    loadLookbook();
+
+    /* ---------- navigation ---------- */
+
+    document.getElementById("items-button").addEventListener("click", () => {
+      window.location.href = "items.html";
+    });
+
+    document.getElementById("outfits-button").addEventListener("click", () => {
+      window.location.href = "outfits.html";
+    });
+
+    document.getElementById("lookbook-button").addEventListener("click", () => {
+      window.location.href = "lookbooks.html";
+    });
+
+  </script>
+
+</body>
+
+</html>

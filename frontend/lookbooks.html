@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Lookbooks</title>
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+
+  <!-- NAVIGATION -->
+
+  <button id="items-button" class="action-button">
+    ITEMS
+  </button>
+
+  <button id="outfits-button" class="action-button">
+    OUTFITS
+  </button>
+
+  <button id="lookbook-button" class="action-button">
+    LOOKBOOKS
+  </button>
+
+  <!-- PAGE TITLE -->
+
+  <h1>Lookbooks</h1>
+
+  <!-- CREATE BUTTON -->
+
+  <button id="create-lookbook-button" class="action-button">
+    Create lookbook
+  </button>
+
+  <!-- GRID -->
+
+  <div id="lookbooks-grid" class="grid-layout"></div>
+
+  <script>
+
+    const API_BASE = "http://127.0.0.1:8000";
+
+    /* ---------- render lookbooks ---------- */
+
+    function renderLookbooks(lookbooks) {
+
+      const grid = document.getElementById("lookbooks-grid");
+
+      grid.innerHTML = "";
+
+      if (!lookbooks.length) {
+
+        grid.innerHTML = "No lookbooks found.";
+
+        return;
+      }
+
+      lookbooks.forEach(lookbook => {
+
+        const card = document.createElement("div");
+
+        card.className = "card";
+
+        /* ---------- IMAGE ---------- */
+
+        /*
+          Priority:
+          1. lookbook.cover_image_filename
+          2. first outfit image
+          3. placeholder
+        */
+
+        const img = document.createElement("img");
+
+        if (lookbook.cover_image_filename) {
+
+          img.src = `/images/lookbooks/${lookbook.cover_image_filename}`;
+
+        } else if (
+          lookbook.outfits_data &&
+          lookbook.outfits_data.length > 0 &&
+          lookbook.outfits_data[0].image_filename
+        ) {
+
+          img.src = `/images/outfits/${lookbook.outfits_data[0].image_filename}`;
+
+        } else {
+
+          img.src = "https://via.placeholder.com/300x400?text=Lookbook";
+        }
+
+        img.alt = lookbook.name || "";
+
+        card.appendChild(img);
+
+        /* ---------- NAME ---------- */
+
+        const nameDiv = document.createElement("div");
+
+        nameDiv.className = "card-name";
+
+        const link = document.createElement("a");
+
+        const lookbookId = lookbook._id || lookbook.id;
+
+        link.href = `lookbook.html?id=${encodeURIComponent(lookbookId)}`;
+
+        link.textContent = lookbook.name || "Unnamed Lookbook";
+
+        nameDiv.appendChild(link);
+
+        card.appendChild(nameDiv);
+
+        /* ---------- META ---------- */
+
+        const meta = document.createElement("div");
+
+        meta.className = "card-meta";
+
+        const outfitCount = lookbook.outfits
+          ? lookbook.outfits.length
+          : 0;
+
+        const itemCount = lookbook.items
+          ? lookbook.items.length
+          : 0;
+
+        meta.textContent =
+          `${outfitCount} outfits • ${itemCount} items`;
+
+        card.appendChild(meta);
+
+        /* ---------- OPTIONAL LOCATION ---------- */
+
+        if (lookbook.location) {
+
+          const locationDiv = document.createElement("div");
+
+          locationDiv.className = "card-meta";
+
+          locationDiv.textContent = lookbook.location;
+
+          card.appendChild(locationDiv);
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    /* ---------- load lookbooks ---------- */
+
+    async function loadLookbooks() {
+
+      try {
+
+        const response = await fetch(`${API_BASE}/lookbooks`);
+
+        if (!response.ok) {
+          throw new Error("Failed to load lookbooks");
+        }
+
+        const lookbooks = await response.json();
+
+        renderLookbooks(lookbooks);
+
+      } catch (err) {
+
+        console.error(err);
+
+        document.getElementById("lookbooks-grid").innerHTML =
+          "Failed to load lookbooks.";
+      }
+    }
+
+    /* ---------- initial load ---------- */
+
+    loadLookbooks();
+
+    /* ---------- navigation ---------- */
+
+    document.getElementById("items-button").addEventListener("click", () => {
+      window.location.href = "items.html";
+    });
+
+    document.getElementById("outfits-button").addEventListener("click", () => {
+      window.location.href = "outfits.html";
+    });
+
+    document.getElementById("lookbook-button").addEventListener("click", () => {
+      window.location.href = "lookbooks.html";
+    });
+
+    document.getElementById("create-lookbook-button").addEventListener("click", () => {
+      window.location.href = "create_lookbook.html";
+    });
+
+  </script>
+
+</body>
+
+</html>

@@ -57,13 +57,13 @@
   Create item
 </button>
 
-<button id="create-outfit-button" class="action-button">
+<!-- <button id="create-outfit-button" class="action-button">
   Create outfit
 </button>
 
 <button id="create-lookbook-button" class="action-button">
   Create lookbook
-</button>
+</button> -->
 
 <div id="filters">
 
@@ -253,9 +253,9 @@ document.getElementById("items-button").addEventListener("click", () => {
 document.getElementById("outfits-button").addEventListener("click", () => {
     window.location.href = "outfits.html";
 });
-// document.getElementById("lookbook-button").addEventListener("click", () => {
-//     window.location.href = "lookbooks.html";
-// });
+document.getElementById("lookbook-button").addEventListener("click", () => {
+    window.location.href = "lookbooks.html";
+});
 
 loadItems();
 

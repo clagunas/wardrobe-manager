@@ -212,7 +212,7 @@ async function loadItem() {
 loadItem();
 
 document.getElementById("back-button").addEventListener("click", () => {
-    window.location.href = "items.html";
+  window.history.back();
 });
 
 document.getElementById("edit-button").addEventListener("click", () => {

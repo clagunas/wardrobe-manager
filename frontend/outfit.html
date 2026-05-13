@@ -65,6 +65,11 @@ h1{
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
+#delete-outfit-button {
+    background: #c62828;
+    color: white;
+}
+
 #calendar-button {
     margin-bottom: 20px;
     padding: 8px 16px;
@@ -85,11 +90,9 @@ h1{
 
 <body>
 
-<button id="back-button">← Back to Outfits</button>
+<button id="back-button">← Back</button>
 <button id="calendar-button">📅 Add to Calendar</button>
-<button id="delete-outfit-button" style="background:red;color:white;">
-  Delete Outfit
-</button>
+<button id="delete-outfit-button">Delete Outfit</button>
 
 <h1 id="outfit-name">Loading outfit...</h1>
 <p id="outfit-season"></p>
@@ -186,7 +189,7 @@ async function loadOutfit(){
 loadOutfit();
 
 document.getElementById("back-button").addEventListener("click", () => {
-    window.location.href = "outfits.html";
+    window.history.back();
 });
 
 document.getElementById("calendar-button").addEventListener("click", () => {
